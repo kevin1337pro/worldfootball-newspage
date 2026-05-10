@@ -15,7 +15,18 @@ const FETCH_TIMEOUT_MS = 12_000;
 
 const GLADBECK_RSS = 'http://selfdb.gkd-re.de/selfdbinter140/feed140.rss?db=404&form=list&orderby=fieldDatum&desc=true&searchfieldBeginndatum.max=heute&searchfieldAblaufdatum.min=heute&feedname=Aktuelle%20News%20aus%20Gladbeck';
 const GELSENKIRCHEN_RSS = 'https://www.gelsenkirchen.de/de/_meta/aktuelles/artikel/newsfeed/';
+const FLVW_RSS = 'https://flvw.de/feed/rss/de.rss';
 const FUSSBALL_DE_URL = 'https://www.fussball.de/';
+const FUSSBALL_DE_ALL_NEWS = 'https://www.fussball.de/news/-/include/all_news';
+
+// Keywords für "Zweckel und Umgebung" — Region Gladbeck + Ruhrgebiet + Westfalen
+const REGION_KEYWORDS = [
+  'zweckel', 'gladbeck', 'westfalen', 'flvw', 'ruhrgebiet', 'revier',
+  'bottrop', 'gelsenkirchen', 'bochum', 'essen', 'recklinghausen',
+  'dorsten', 'marl', 'herten', 'datteln', 'oberhausen', 'wattenscheid',
+  'kreisliga', 'bezirksliga', 'landesliga westfalen', 'oberliga westfalen',
+];
+const REGION_REGEX = new RegExp('\\b(' + REGION_KEYWORDS.join('|') + ')\\b', 'i');
 
 // Gladbeck Koordinaten für Open-Meteo
 const WEATHER_LAT = 51.5717;
@@ -94,10 +105,41 @@ async function fetchGelsenkirchen() {
   });
 }
 
-// ── Scraper: fussball.de (next.fussball.de redirects here) ────────
-async function fetchFussballDe() {
-  const res = await fetchWithTimeout(FUSSBALL_DE_URL);
-  if (!res.ok) throw new Error(`fussball.de status ${res.status}`);
+// ── Scraper: FLVW Westfalen RSS (Verband Westfalen-Liga + Region) ─
+async function fetchFlvw() {
+  const feed = await parser.parseURL(FLVW_RSS);
+  return (feed.items || []).slice(0, 8).map((it) => {
+    const desc = stripHtml(it.contentSnippet || it.content || '');
+    // Bild aus media:thumbnail oder content extrahieren
+    let img = null;
+    const mediaThumb = it['media:thumbnail']?.$ || it['media:thumbnail'];
+    if (mediaThumb?.url) img = mediaThumb.url;
+    if (!img && it.content) {
+      const m = it.content.match(/<img[^>]+src="([^"]+)"/);
+      if (m) img = m[1];
+    }
+    return {
+      source: 'FLVW · Westfalen',
+      sourceKey: 'westfalen',
+      title: (it.title || '').trim(),
+      url: it.link,
+      pubDate: it.pubDate || it.isoDate || null,
+      summary: trim(desc, 260),
+      bodyHtml: it['content:encoded'] || it.content || '',
+      image: img,
+      regional: true,
+    };
+  });
+}
+
+// ── Scraper: fussball.de — both Homepage + all_news ──────────────
+function isRegional(text = '') {
+  return REGION_REGEX.test(text);
+}
+
+async function scrapeFussballPage(url) {
+  const res = await fetchWithTimeout(url);
+  if (!res.ok) throw new Error(`fussball.de ${url} → status ${res.status}`);
   const html = await res.text();
   const $ = cheerio.load(html);
   const items = [];
@@ -116,19 +158,46 @@ async function fetchFussballDe() {
     if (items.some((x) => x.url === fullUrl)) return;
     const summary = $a.find('p,.teaser,.summary').first().text().replace(/\s+/g, ' ').trim();
     const img = $a.find('img').first().attr('src') || $a.find('img').first().attr('data-src') || null;
+    const haystack = `${title} ${summary} ${href}`;
+    const regional = isRegional(haystack);
     items.push({
-      source: 'next.fussball.de',
-      sourceKey: 'fussball',
+      source: regional ? 'fussball.de · Region Westfalen' : 'next.fussball.de',
+      sourceKey: regional ? 'westfalen' : 'fussball',
       title: trim(title, 140),
       url: fullUrl,
       pubDate: null,
       summary: trim(summary, 260),
       bodyHtml: '',
       image: img,
+      regional,
     });
   });
 
-  return items.slice(0, 6);
+  return items;
+}
+
+async function fetchFussballDe() {
+  // Beide Quellen parallel: Homepage (Top-News) + all_news (vollständige Liste)
+  const [homeRes, allRes] = await Promise.allSettled([
+    scrapeFussballPage(FUSSBALL_DE_URL),
+    scrapeFussballPage(FUSSBALL_DE_ALL_NEWS),
+  ]);
+
+  const merged = new Map(); // url → item, dedup
+  for (const r of [homeRes, allRes]) {
+    if (r.status === 'fulfilled') {
+      for (const it of r.value) {
+        // Bei Duplikaten: regionale Variante bevorzugen
+        const existing = merged.get(it.url);
+        if (!existing || (!existing.regional && it.regional)) merged.set(it.url, it);
+      }
+    }
+  }
+  const all = [...merged.values()];
+  // Regionale Items zuerst, dann Rest
+  all.sort((a, b) => Number(b.regional) - Number(a.regional));
+  // Mindestens 2 reguläre + alle regionalen, max 10 gesamt
+  return all.slice(0, 10);
 }
 
 // ── News-Aggregator ────────────────────────────────────────────────
@@ -136,6 +205,7 @@ async function refreshNews() {
   const sources = [
     { key: 'gladbeck', fn: fetchGladbeck },
     { key: 'gelsenkirchen', fn: fetchGelsenkirchen },
+    { key: 'westfalen', fn: fetchFlvw },
     { key: 'fussball', fn: fetchFussballDe },
   ];
 

@@ -247,6 +247,7 @@ body{overflow-x:hidden}
 .card[data-team="gladbeck"]     {--card-color:#3eff8b;--card-glow:rgba(62,255,139,.28)}
 .card[data-team="gelsenkirchen"]{--card-color:#1f8be8;--card-glow:rgba(31,139,232,.34)}
 .card[data-team="fussball"]     {--card-color:#fde100;--card-glow:rgba(253,225,0,.32)}
+.card[data-team="westfalen"]    {--card-color:#e83b3b;--card-glow:rgba(232,59,59,.32)}
 .card[data-team="messi"]        {--card-color:#75aadb;--card-glow:rgba(117,170,219,.32)}
 .card[data-team="mbappe"]       {--card-color:#1e3a8a;--card-glow:rgba(30,58,138,.34)}
 .card[data-team="ronaldo"]      {--card-color:#e83b3b;--card-glow:rgba(232,59,59,.30)}
@@ -539,6 +540,7 @@ const CRESTS = {
   gladbeck:       '<svg viewBox="0 0 40 40" fill="none"><circle cx="20" cy="20" r="17" fill="none" stroke="#3eff8b" stroke-width="2"/><path d="M14 16 L20 12 L26 16 V26 L20 30 L14 26 Z" fill="none" stroke="#3eff8b" stroke-width="1.5"/><circle cx="20" cy="20" r="2.5" fill="#3eff8b"/></svg>',
   gelsenkirchen:  '<svg viewBox="0 0 40 40" fill="none"><circle cx="20" cy="20" r="17" fill="#1f8be8" stroke="#fff" stroke-width="1.5"/><text x="20" y="18" text-anchor="middle" fill="#fff" font-family="Archivo Black" font-size="9" font-weight="900">GE</text><text x="20" y="28" text-anchor="middle" fill="#fff" font-size="5" font-weight="700" letter-spacing=".1em">STADT</text></svg>',
   fussball:       '<svg viewBox="0 0 40 40" fill="none"><circle cx="20" cy="20" r="17" fill="#fde100" stroke="#000" stroke-width="1.5"/><text x="20" y="25" text-anchor="middle" fill="#000" font-family="Archivo Black" font-size="9" font-weight="900">DFB</text></svg>',
+  westfalen:      '<svg viewBox="0 0 40 40" fill="none"><circle cx="20" cy="20" r="17" fill="#e83b3b" stroke="#fff" stroke-width="1.5"/><text x="20" y="22" text-anchor="middle" fill="#fff" font-family="Archivo Black" font-size="8" font-weight="900">FLVW</text><text x="20" y="30" text-anchor="middle" fill="#fff" font-size="5" font-weight="700" letter-spacing=".1em">WESTFALEN</text></svg>',
   messi:          '<svg viewBox="0 0 40 40"><rect width="40" height="40" fill="#75aadb"/><text x="20" y="26" text-anchor="middle" fill="#fff" font-family="Archivo Black" font-size="14" font-weight="900">10</text></svg>',
   mbappe:         '<svg viewBox="0 0 40 40"><rect width="40" height="40" fill="#1e3a8a"/><text x="20" y="26" text-anchor="middle" fill="#fff" font-family="Archivo Black" font-size="14" font-weight="900">10</text></svg>',
   ronaldo:        '<svg viewBox="0 0 40 40"><rect width="40" height="40" fill="#e83b3b"/><text x="20" y="26" text-anchor="middle" fill="#fff" font-family="Archivo Black" font-size="13" font-weight="900">CR7</text></svg>',
@@ -550,6 +552,7 @@ const SRC_META = {
   gladbeck:      { team: 'gladbeck',      kicker: 'Stadt Gladbeck',      img: '/images/sv-zweckel-blog.webp', tag: 'Lokal' },
   gelsenkirchen: { team: 'gelsenkirchen', kicker: 'Stadt Gelsenkirchen', img: '/images/sv-zweckel-banner.jpg', tag: 'Region' },
   fussball:      { team: 'fussball',      kicker: 'next.fussball.de',    img: '/images/taktik.webp',          tag: 'Fußball' },
+  westfalen:     { team: 'westfalen',     kicker: 'Region Westfalen',    img: '/images/sv-zweckel-team.webp', tag: 'Region' },
 };
 
 // ── HTML Builder ────────────────────────────────────────────────
@@ -779,19 +782,24 @@ async function loadNews() {
     const gladbeck = byKey('gladbeck');
     const gelsen = byKey('gelsenkirchen');
     const fussball = byKey('fussball');
+    const westfalen = byKey('westfalen');
 
+    // Westfalen-Region zuerst (Zweckel & Umgebung), dann Stadt-News
+    if (westfalen[0]) cards.push(westfalen.shift());
     if (gladbeck[0]) cards.push(gladbeck.shift());
     cards.push(staticByTeam.messi);
     if (gelsen[0]) cards.push(gelsen.shift());
+    if (westfalen[0]) cards.push(westfalen.shift());
     if (fussball[0]) cards.push(fussball.shift());
     cards.push(staticByTeam.mbappe);
     if (gladbeck[0]) cards.push(gladbeck.shift());
     if (gelsen[0]) cards.push(gelsen.shift());
     cards.push(staticByTeam.taktik);
+    if (westfalen[0]) cards.push(westfalen.shift());
     if (fussball[0]) cards.push(fussball.shift());
     cards.push(staticByTeam.ronaldo);
     // Rest anhängen
-    cards.push(...gladbeck, ...gelsen, ...fussball);
+    cards.push(...westfalen, ...gladbeck, ...gelsen, ...fussball);
 
     renderCards(cards);
     renderMatchStrip(items);
