@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Worldfootball — Fußball aus der Region</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&family=Archivo+Black&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root[data-theme="dark"]{
+  --bg:#08090d;--bg2:#0f1117;--surface:#13151c;
+  --line:rgba(255,255,255,.08);
+  --text:#f4f5f8;--text-dim:rgba(255,255,255,.55);--text-faint:rgba(255,255,255,.32);
+  --accent:#3eff8b;--pitch1:#0c2a16;--pitch2:#091e10;
+}
+:root[data-theme="light"]{
+  --bg:#f4f5f8;--bg2:#ebedf2;--surface:#ffffff;
+  --line:rgba(10,12,20,.10);
+  --text:#0a0c14;--text-dim:rgba(10,12,20,.62);--text-faint:rgba(10,12,20,.38);
+  --accent:#0e8f43;--pitch1:#1a5a2a;--pitch2:#147028;
+}
+
+html,body{width:100%;min-height:100%;background:var(--bg);color:var(--text);
+  font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased;
+  transition:background .35s ease,color .35s ease}
+body{overflow-x:hidden}
+
+/* Pitch background */
+.pitch-bg{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.55;transition:opacity .35s}
+:root[data-theme="light"] .pitch-bg{opacity:.18}
+.pitch-bg::before{content:'';position:absolute;inset:0;
+  background:
+    radial-gradient(ellipse 70% 55% at 50% 35%,rgba(62,255,139,.06),transparent 70%),
+    repeating-linear-gradient(90deg,var(--pitch1) 0,var(--pitch1) 80px,var(--pitch2) 80px,var(--pitch2) 160px);
+  filter:blur(1px)}
+.pitch-bg::after{content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse 80% 60% at 50% 50%,transparent 30%,var(--bg) 80%)}
+
+/* Header */
+.hdr{position:relative;z-index:10;padding:22px 40px;display:flex;align-items:center;
+  justify-content:space-between;border-bottom:1px solid var(--line);
+  background:color-mix(in srgb,var(--bg) 80%,transparent);backdrop-filter:blur(14px)}
+.brand{display:flex;align-items:center;gap:12px}
+.brand-mark{width:36px;height:36px;border-radius:50%;
+  background:conic-gradient(from 0deg,#3eff8b,#6bcbff,#c77dff,#ff6b9d,#ffd93d,#3eff8b);
+  display:flex;align-items:center;justify-content:center;position:relative;
+  box-shadow:0 0 0 1px rgba(255,255,255,.2),0 8px 22px rgba(62,255,139,.25)}
+.brand-mark::before{content:'';position:absolute;inset:6px;border-radius:50%;
+  background:var(--bg);border:1.5px solid var(--text)}
+.brand-mark::after{content:'⚽';position:relative;font-size:14px;z-index:1}
+.brand-name{font-family:'Archivo Black',sans-serif;font-size:18px;letter-spacing:-.01em;text-transform:uppercase}
+.brand-name span{color:var(--accent)}
+.brand-sub{font-size:9.5px;letter-spacing:.28em;text-transform:uppercase;color:var(--text-faint);margin-top:2px}
+
+.nav{display:flex;gap:28px;font-size:12px;font-weight:500;color:var(--text-dim);letter-spacing:.04em}
+.nav a{color:inherit;text-decoration:none;cursor:pointer;transition:color .2s}
+.nav a:hover{color:var(--text)}
+.nav a.active{color:var(--text)}
+.nav a.active::after{content:'';display:block;height:2px;background:var(--accent);margin-top:6px;border-radius:2px}
+
+.hdr-r{display:flex;align-items:center;gap:14px}
+.theme-tog{width:42px;height:24px;border-radius:100px;background:var(--surface);
+  border:1px solid var(--line);position:relative;cursor:pointer;transition:background .25s}
+.theme-tog::after{content:'';position:absolute;width:18px;height:18px;border-radius:50%;
+  background:var(--text);top:2px;left:2px;transition:transform .25s,background .25s}
+:root[data-theme="dark"] .theme-tog::after{transform:translateX(18px)}
+.live-pill{display:flex;align-items:center;gap:8px;padding:5px 11px;border-radius:100px;
+  background:rgba(255,60,60,.12);border:1px solid rgba(255,60,60,.35);
+  font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#ff5050;font-weight:600}
+.live-dot{width:6px;height:6px;border-radius:50%;background:#ff5050;animation:pulse 1.4s infinite}
+@keyframes pulse{50%{opacity:.3}}
+
+@media(max-width:760px){.hdr{padding:14px 18px;flex-wrap:wrap;gap:10px}.nav{display:none}.brand-sub{display:none}}
+
+/* Hero */
+.hero{position:relative;z-index:10;padding:54px 40px 18px;display:flex;justify-content:space-between;
+  align-items:flex-end;gap:30px;flex-wrap:wrap}
+.hero-l{max-width:680px}
+.eyebrow{font-size:10.5px;letter-spacing:.42em;text-transform:uppercase;color:var(--accent);
+  font-weight:600;margin-bottom:14px}
+.hero h1{font-family:'Archivo Black',sans-serif;font-size:clamp(34px,6vw,68px);
+  line-height:.95;letter-spacing:-.02em;text-wrap:balance}
+.hero h1 i{font-style:normal;
+  background:linear-gradient(110deg,#3eff8b 0%,#6bcbff 30%,#c77dff 60%,#ff6b9d 100%);
+  -webkit-background-clip:text;background-clip:text;color:transparent}
+.hero p{margin-top:14px;font-size:15px;line-height:1.55;color:var(--text-dim);max-width:560px}
+
+/* Hero Right: Weather + Clock combo */
+.hero-r{display:flex;flex-direction:column;align-items:flex-end;gap:14px;min-width:260px}
+.weather-card{display:flex;align-items:center;gap:14px;padding:14px 18px;border-radius:14px;
+  background:linear-gradient(135deg,color-mix(in srgb,var(--surface) 85%,transparent),color-mix(in srgb,var(--bg2) 85%,transparent));
+  border:1px solid var(--line);backdrop-filter:blur(14px);min-width:240px;
+  box-shadow:0 8px 26px rgba(0,0,0,.18)}
+.wx-icon{font-size:38px;line-height:1;filter:drop-shadow(0 2px 6px rgba(0,0,0,.25))}
+.wx-info{flex:1;display:flex;flex-direction:column;gap:2px}
+.wx-temp{font-family:'Bebas Neue',sans-serif;font-size:30px;letter-spacing:.02em;line-height:1}
+.wx-loc{font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--text-faint);font-weight:600}
+.wx-meta{font-size:11px;color:var(--text-dim);display:flex;gap:10px;margin-top:3px}
+.wx-meta span{display:inline-flex;align-items:center;gap:4px}
+.wx-forecast{display:flex;gap:6px;font-size:10px;color:var(--text-dim);align-self:stretch;
+  justify-content:space-between;padding:0 2px}
+.wx-day{display:flex;flex-direction:column;align-items:center;gap:2px;min-width:38px}
+.wx-day-name{font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--text-faint);font-weight:600}
+.wx-day-icon{font-size:16px}
+.wx-day-temp{font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:.04em}
+.clock-row{display:flex;align-items:baseline;gap:14px;font-size:11px;
+  color:var(--text-faint);letter-spacing:.18em;text-transform:uppercase}
+.clock-row .clock{font-family:'Bebas Neue',sans-serif;font-size:34px;letter-spacing:.02em;color:var(--text);line-height:1}
+.clock-row .date{font-size:10.5px;letter-spacing:.25em}
+
+.match-strip{margin:24px 40px 0;position:relative;z-index:10;display:flex;gap:10px;
+  overflow-x:auto;padding-bottom:6px;scrollbar-width:none}
+.match-strip::-webkit-scrollbar{display:none}
+.minimatch{flex:0 0 auto;display:flex;align-items:center;gap:10px;padding:9px 14px;
+  background:var(--surface);border:1px solid var(--line);border-radius:8px;font-size:11px}
+.minimatch .lg{font-size:9px;color:var(--text-faint);letter-spacing:.2em;text-transform:uppercase}
+.minimatch .sc{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:.05em}
+.minimatch .tm{color:var(--text-dim);min-width:0;white-space:nowrap}
+.minimatch.live .sc{color:#ff5050}
+.minimatch .min{font-size:9.5px;color:#ff5050;font-weight:700}
+
+@media(max-width:760px){.hero{padding:32px 18px 12px}.match-strip{margin:18px 18px 0}
+  .hero-r{align-items:flex-start;width:100%}.weather-card{width:100%}}
+
+/* Section title */
+.sec-ttl{position:relative;z-index:10;display:flex;align-items:baseline;justify-content:space-between;
+  padding:46px 40px 18px;gap:18px;flex-wrap:wrap}
+.sec-ttl h2{font-family:'Archivo Black',sans-serif;font-size:24px;letter-spacing:-.01em;text-transform:uppercase}
+.sec-ttl .hint{font-size:10.5px;letter-spacing:.28em;text-transform:uppercase;color:var(--text-faint)}
+.sec-ttl .hint i{color:var(--accent);font-style:normal}
+.sec-ttl .refresh-info{font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--text-faint);
+  display:inline-flex;align-items:center;gap:8px}
+.sec-ttl .refresh-info .ld{width:6px;height:6px;border-radius:50%;background:var(--accent);animation:pulse 1.6s infinite}
+@media(max-width:760px){.sec-ttl{padding:30px 18px 14px}}
+
+/* Card grid */
+.grid{position:relative;z-index:10;padding:0 40px 80px;display:grid;
+  grid-template-columns:repeat(3,1fr);gap:22px;max-width:1400px;margin:0 auto}
+@media(max-width:1100px){.grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:680px){.grid{padding:0 18px 60px;grid-template-columns:1fr;gap:16px}}
+
+.card{position:relative;aspect-ratio:4/5;perspective:1400px;cursor:pointer;
+  transition:filter .2s ease;will-change:transform;text-decoration:none;color:inherit;display:block}
+.card:hover{filter:drop-shadow(0 24px 50px rgba(0,0,0,.45)) drop-shadow(0 0 30px var(--card-glow,rgba(62,255,139,.18)))}
+:root[data-theme="light"] .card{filter:drop-shadow(0 6px 14px rgba(10,12,20,.06))}
+:root[data-theme="light"] .card:hover{filter:drop-shadow(0 24px 50px rgba(10,12,20,.18)) drop-shadow(0 0 30px var(--card-glow,rgba(14,143,67,.16)))}
+
+.card-tilt{position:relative;width:100%;height:100%;transform-style:preserve-3d;
+  transition:transform .12s ease-out}
+.card-flip{position:relative;width:100%;height:100%;transform-style:preserve-3d;
+  transition:transform .65s cubic-bezier(.5,0,.3,1)}
+.card.flipped .card-flip{transform:rotateY(180deg)}
+
+.face{position:absolute;inset:0;border-radius:18px;background:var(--surface);
+  border:1px solid var(--line);overflow:hidden;
+  backface-visibility:hidden;-webkit-backface-visibility:hidden;
+  transition:opacity 0s linear .325s}
+.face.back{transform:rotateY(180deg);opacity:0}
+.card.flipped .face.front{opacity:0}
+.card.flipped .face.back{opacity:1}
+
+.fx{position:absolute;inset:0;pointer-events:none;border-radius:inherit}
+.fx-base{background:
+  radial-gradient(ellipse 80% 60% at 30% 20%,color-mix(in srgb,var(--text) 6%,transparent),transparent 70%),
+  linear-gradient(160deg,var(--surface) 0%,var(--bg2) 100%)}
+.fx-irid{mix-blend-mode:color;opacity:0;transition:opacity .25s}
+.fx-shimmer{mix-blend-mode:screen;opacity:0;transition:opacity .25s}
+.fx-spec{mix-blend-mode:screen;opacity:0;transition:opacity .15s}
+.fx-noise{mix-blend-mode:overlay;opacity:.04}
+.fx-vignette{background:radial-gradient(ellipse 90% 90% at 50% 50%,transparent 50%,rgba(0,0,0,.35) 100%);mix-blend-mode:multiply}
+:root[data-theme="light"] .fx-vignette{background:radial-gradient(ellipse 90% 90% at 50% 50%,transparent 55%,rgba(0,0,0,.08) 100%)}
+.fx-edge{border:1px solid color-mix(in srgb,var(--text) 12%,transparent);
+  box-shadow:inset 0 1px 0 color-mix(in srgb,var(--text) 12%,transparent),inset 0 -1px 0 rgba(0,0,0,.3);
+  border-radius:inherit}
+
+.card:hover:not(.flipped) .fx-irid{opacity:.55}
+.card:hover:not(.flipped) .fx-shimmer{opacity:.22}
+.card:hover:not(.flipped) .fx-spec{opacity:1}
+.card.flipped .fx-irid{opacity:.45}
+
+.card-body{position:relative;width:100%;height:100%;padding:18px;display:flex;
+  flex-direction:column;gap:12px;z-index:2}
+.card-img{position:relative;height:38%;border-radius:11px;overflow:hidden;
+  background:var(--bg2);flex-shrink:0}
+.card-img img{width:100%;height:100%;object-fit:cover;display:block;
+  transition:transform .5s ease}
+.card:hover .card-img img{transform:scale(1.04)}
+.card-img::after{content:'';position:absolute;inset:0;border-radius:inherit;
+  background:linear-gradient(180deg,transparent 50%,rgba(0,0,0,.55) 100%);pointer-events:none}
+.card-img-tag{position:absolute;top:10px;left:10px;display:inline-flex;align-items:center;gap:6px;
+  padding:5px 10px;font-size:9px;letter-spacing:.2em;text-transform:uppercase;font-weight:700;
+  background:rgba(0,0,0,.55);backdrop-filter:blur(8px);color:#fff;border-radius:100px;z-index:2}
+.card-img-tag.live{background:rgba(255,60,60,.85);color:#fff}
+.card-img-tag.live::before{content:'';width:5px;height:5px;border-radius:50%;background:#fff;animation:pulse 1.4s infinite}
+.card-img-tag.ext{background:color-mix(in srgb,var(--accent) 80%,#000);color:#000}
+.card-num{position:absolute;top:10px;right:12px;font-family:'Bebas Neue',sans-serif;
+  font-size:13px;letter-spacing:.1em;color:rgba(255,255,255,.85);z-index:2;text-shadow:0 1px 4px rgba(0,0,0,.5)}
+.card-crest{position:absolute;bottom:-18px;right:14px;width:48px;height:48px;border-radius:12px;
+  display:flex;align-items:center;justify-content:center;z-index:3;
+  background:var(--surface);border:1px solid var(--line);
+  box-shadow:0 6px 18px rgba(0,0,0,.35);overflow:hidden}
+.card-crest svg{width:30px;height:30px}
+.card-crest img{width:100%;height:100%;object-fit:cover}
+
+.card-content{flex:1;display:flex;flex-direction:column;gap:8px;min-height:0;padding-top:6px}
+.card-kicker{font-size:10px;letter-spacing:.28em;text-transform:uppercase;
+  color:var(--card-color,var(--accent));font-weight:700}
+.card-headline{font-family:'Archivo Black',sans-serif;font-size:19px;line-height:1.12;
+  letter-spacing:-.01em;text-wrap:balance}
+.card-blurb{font-size:12.5px;line-height:1.5;color:var(--text-dim);
+  display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+
+.card-bot{display:flex;align-items:center;justify-content:space-between;font-size:10px;
+  letter-spacing:.18em;text-transform:uppercase;color:var(--text-faint);font-weight:600;margin-top:auto}
+.card-bot .arr{display:inline-flex;align-items:center;gap:6px;color:var(--text-dim);transition:gap .25s,color .25s}
+.card-bot .arr svg{transition:transform .25s}
+.card:hover .card-bot .arr{gap:10px;color:var(--text)}
+.card:hover .card-bot .arr svg{transform:translateX(2px)}
+
+.back-body{position:relative;width:100%;height:100%;padding:22px;display:flex;
+  flex-direction:column;gap:10px;z-index:2;overflow:hidden}
+.back-meta{display:flex;align-items:center;justify-content:space-between;font-size:9.5px;
+  letter-spacing:.22em;text-transform:uppercase;color:var(--text-faint);font-weight:600}
+.back-meta .dot{width:3px;height:3px;border-radius:50%;background:var(--text-faint);margin:0 8px}
+.back-meta .src{color:var(--card-color,var(--accent))}
+.back-kicker{font-size:9.5px;letter-spacing:.28em;text-transform:uppercase;
+  color:var(--card-color,var(--accent));font-weight:700;margin-top:2px}
+.back-h{font-family:'Archivo Black',sans-serif;font-size:18px;line-height:1.15;
+  letter-spacing:-.01em;text-wrap:balance}
+.back-news{flex:1;overflow-y:auto;padding-right:6px;font-size:12px;line-height:1.7;
+  color:var(--text-dim);scrollbar-width:thin;scrollbar-color:var(--text-faint) transparent}
+.back-news::-webkit-scrollbar{width:5px}
+.back-news::-webkit-scrollbar-thumb{background:var(--text-faint);border-radius:3px}
+.back-news p+p{margin-top:9px}
+.back-news strong{color:var(--text);font-weight:600}
+.back-foot{display:flex;align-items:center;justify-content:space-between;font-size:9.5px;
+  letter-spacing:.18em;text-transform:uppercase;color:var(--text-faint);font-weight:600;
+  padding-top:10px;border-top:1px solid var(--line)}
+.back-foot .flip-back{cursor:pointer;color:var(--text-dim);display:inline-flex;align-items:center;gap:5px}
+.back-foot .flip-back:hover{color:var(--text)}
+.back-foot a{color:var(--text-dim);text-decoration:none;display:inline-flex;align-items:center;gap:5px}
+.back-foot a:hover{color:var(--text)}
+
+/* Per-source colors */
+.card[data-team="zweckel"]      {--card-color:#1d8f43;--card-glow:rgba(29,143,67,.32)}
+.card[data-team="gladbeck"]     {--card-color:#3eff8b;--card-glow:rgba(62,255,139,.28)}
+.card[data-team="gelsenkirchen"]{--card-color:#1f8be8;--card-glow:rgba(31,139,232,.34)}
+.card[data-team="fussball"]     {--card-color:#fde100;--card-glow:rgba(253,225,0,.32)}
+.card[data-team="messi"]        {--card-color:#75aadb;--card-glow:rgba(117,170,219,.32)}
+.card[data-team="mbappe"]       {--card-color:#1e3a8a;--card-glow:rgba(30,58,138,.34)}
+.card[data-team="ronaldo"]      {--card-color:#e83b3b;--card-glow:rgba(232,59,59,.30)}
+.card[data-team="taktik"]       {--card-color:#a78bfa;--card-glow:rgba(167,139,250,.30)}
+
+/* SV Zweckel — featured */
+.card[data-team="zweckel"] .face{
+  background:linear-gradient(160deg,#0a3d1f 0%,#1d8f43 70%,#2dbb55 100%);
+  border:1px solid rgba(255,255,255,.18)}
+.card[data-team="zweckel"] .card-blurb{color:rgba(255,255,255,.78)}
+.card[data-team="zweckel"] .card-bot{color:rgba(255,255,255,.55)}
+.card[data-team="zweckel"] .card-bot .arr{color:rgba(255,255,255,.85)}
+.card[data-team="zweckel"] .card-headline,
+.card[data-team="zweckel"] .card-kicker{color:#fff}
+.card[data-team="zweckel"] .card-crest{background:#fff;border-color:rgba(255,255,255,.3)}
+
+/* Loading state */
+.skeleton{background:linear-gradient(90deg,var(--surface) 0%,var(--bg2) 50%,var(--surface) 100%);
+  background-size:200% 100%;animation:shimmer 1.4s infinite}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+.empty-state{grid-column:1/-1;text-align:center;padding:60px 20px;color:var(--text-dim);font-size:14px}
+.empty-state .em-h{font-family:'Archivo Black',sans-serif;font-size:22px;color:var(--text);margin-bottom:8px;text-transform:uppercase;letter-spacing:-.01em}
+
+/* Footer */
+.ftr{position:relative;z-index:10;padding:36px 40px;border-top:1px solid var(--line);
+  display:flex;justify-content:space-between;align-items:center;gap:18px;flex-wrap:wrap;
+  font-size:11px;color:var(--text-faint);letter-spacing:.04em}
+.ftr a{color:inherit;text-decoration:none;margin-right:18px}
+.ftr a:hover{color:var(--text)}
+@media(max-width:760px){.ftr{padding:24px 18px}}
+
+.tip{position:fixed;bottom:30px;left:50%;transform:translateX(-50%) translateY(80px);
+  padding:11px 22px;background:var(--surface);border:1px solid var(--line);border-radius:100px;
+  font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--text-dim);font-weight:600;
+  box-shadow:0 12px 30px rgba(0,0,0,.4);z-index:50;pointer-events:none;
+  transition:transform .35s cubic-bezier(.3,1.4,.5,1),opacity .35s;opacity:0}
+.tip.show{transform:translateX(-50%) translateY(0);opacity:1}
+.tip i{color:var(--accent);font-style:normal}
+</style>
+</head>
+<body>
+
+<div class="pitch-bg" aria-hidden="true"></div>
+
+<header class="hdr">
+  <div class="brand">
+    <div class="brand-mark"></div>
+    <div>
+      <div class="brand-name">World<span>football</span>.com</div>
+      <div class="brand-sub">Region Ruhrgebiet · Gladbeck</div>
+    </div>
+  </div>
+  <nav class="nav">
+    <a class="active">Heute</a>
+    <a>Gladbeck</a>
+    <a>Gelsenkirchen</a>
+    <a>Fußball</a>
+    <a>Stars</a>
+    <a>Wetter</a>
+  </nav>
+  <div class="hdr-r">
+    <div class="live-pill" id="livePill"><span class="live-dot"></span><span id="livePillTxt">Live</span></div>
+    <button class="theme-tog" id="themeTog" aria-label="Theme umschalten"></button>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="hero-l">
+    <div class="eyebrow">Live · News · Wetter · Region</div>
+    <h1>Fußball aus<br>der <i>Nachbarschaft</i> bis zur Bundesliga.</h1>
+    <p>Echtzeit-News aus Gladbeck, Gelsenkirchen und der Fußball-Welt — automatisch aktualisiert. Plus aktuelles Wetter für die Region.</p>
+  </div>
+  <div class="hero-r">
+    <div class="weather-card" id="weatherCard">
+      <div class="wx-icon" id="wxIcon">⛅</div>
+      <div class="wx-info">
+        <div class="wx-loc" id="wxLoc">Gladbeck</div>
+        <div class="wx-temp" id="wxTemp">— °C</div>
+        <div class="wx-meta" id="wxMeta">
+          <span title="Gefühlt">⊙ —°</span>
+          <span title="Wind">≈ — km/h</span>
+        </div>
+      </div>
+    </div>
+    <div class="wx-forecast" id="wxForecast"></div>
+    <div class="clock-row">
+      <div class="clock" id="clock">--:--</div>
+      <div class="date" id="date">—</div>
+    </div>
+  </div>
+</section>
+
+<div class="match-strip" id="matchStrip">
+  <div class="minimatch"><span class="lg">News</span><span class="tm">Wird geladen…</span></div>
+</div>
+
+<div class="sec-ttl">
+  <h2>Heute im Überblick</h2>
+  <div class="refresh-info" id="refreshInfo"><span class="ld"></span><span id="refreshTxt">Lädt News…</span></div>
+</div>
+
+<main class="grid" id="grid">
+  <div class="empty-state"><div class="em-h">News werden geladen…</div><div>Wir holen die aktuellsten Beiträge von next.fussball.de, gladbeck.de und gelsenkirchen.de.</div></div>
+</main>
+
+<footer class="ftr">
+  <div>© 2026 Worldfootball.com · Inoffizielles Fan-Projekt aus Gladbeck-Zweckel</div>
+  <div>
+    <a>Impressum</a>
+    <a>Datenschutz</a>
+    <a>Kontakt</a>
+    <a href="/api/news">API</a>
+  </div>
+</footer>
+
+<div class="tip" id="tip">⚽ Klick auf eine Karte für die <i>News</i></div>
+
+<script>
+// ── Theme toggle ─────────────────────────────────────────────────
+const root = document.documentElement;
+root.setAttribute('data-theme', localStorage.getItem('wf-theme') || 'dark');
+document.getElementById('themeTog').addEventListener('click', () => {
+  const next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+  root.setAttribute('data-theme', next);
+  localStorage.setItem('wf-theme', next);
+});
+
+// ── Clock ────────────────────────────────────────────────────────
+function tick() {
+  const d = new Date();
+  document.getElementById('clock').textContent =
+    `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+  const days = ['So','Mo','Di','Mi','Do','Fr','Sa'];
+  const months = ['Jan','Feb','März','April','Mai','Juni','Juli','Aug','Sept','Okt','Nov','Dez'];
+  document.getElementById('date').textContent =
+    `${days[d.getDay()]} · ${d.getDate()}. ${months[d.getMonth()]} ${d.getFullYear()}`;
+}
+tick(); setInterval(tick, 30000);
+
+// ── Noise texture ────────────────────────────────────────────────
+const NOISE_URL = (() => {
+  const c = document.createElement('canvas'); c.width = c.height = 200;
+  const ctx = c.getContext('2d'), d = ctx.createImageData(200,200);
+  for (let i=0;i<d.data.length;i+=4){const v=Math.random()*255|0;d.data[i]=d.data[i+1]=d.data[i+2]=v;d.data[i+3]=255;}
+  ctx.putImageData(d,0,0); return c.toDataURL();
+})();
+
+// ── Wetter-Code → Emoji + Label (WMO) ────────────────────────────
+function weatherIcon(code, isDay = true) {
+  const day = isDay;
+  if (code === 0) return day ? '☀️' : '🌙';
+  if ([1,2].includes(code)) return day ? '🌤️' : '🌙';
+  if (code === 3) return '☁️';
+  if ([45,48].includes(code)) return '🌫️';
+  if ([51,53,55,56,57].includes(code)) return '🌦️';
+  if ([61,63,65,66,67,80,81,82].includes(code)) return '🌧️';
+  if ([71,73,75,77,85,86].includes(code)) return '❄️';
+  if ([95,96,99].includes(code)) return '⛈️';
+  return '⛅';
+}
+function weatherLabel(code) {
+  if (code === 0) return 'Klar';
+  if ([1,2].includes(code)) return 'Heiter';
+  if (code === 3) return 'Bewölkt';
+  if ([45,48].includes(code)) return 'Nebel';
+  if ([51,53,55].includes(code)) return 'Niesel';
+  if ([56,57].includes(code)) return 'Gefr. Niesel';
+  if ([61,63,65,80,81,82].includes(code)) return 'Regen';
+  if ([66,67].includes(code)) return 'Gefr. Regen';
+  if ([71,73,75,85,86].includes(code)) return 'Schnee';
+  if (code === 77) return 'Graupel';
+  if ([95,96,99].includes(code)) return 'Gewitter';
+  return '—';
+}
+
+// ── Wetter laden ──────────────────────────────────────────────────
+async function loadWeather() {
+  try {
+    const res = await fetch('/api/weather', { cache: 'no-cache' });
+    const w = await res.json();
+    if (!w.current) return;
+    document.getElementById('wxIcon').textContent = weatherIcon(w.current.code, w.current.isDay);
+    document.getElementById('wxTemp').textContent = `${Math.round(w.current.temperature)}°C`;
+    document.getElementById('wxLoc').textContent = `${w.location} · ${weatherLabel(w.current.code)}`;
+    document.getElementById('wxMeta').innerHTML =
+      `<span title="Gefühlt">⊙ ${Math.round(w.current.feelsLike)}°</span>` +
+      `<span title="Wind">≈ ${Math.round(w.current.wind)} km/h</span>` +
+      `<span title="Luftfeuchte">💧 ${Math.round(w.current.humidity)}%</span>`;
+    const days = ['So','Mo','Di','Mi','Do','Fr','Sa'];
+    const fc = (w.forecast || []).slice(0, 4);
+    document.getElementById('wxForecast').innerHTML = fc.map(d => {
+      const dt = new Date(d.date);
+      const dn = days[dt.getDay()];
+      return `<div class="wx-day"><span class="wx-day-name">${dn}</span>` +
+        `<span class="wx-day-icon">${weatherIcon(d.code, true)}</span>` +
+        `<span class="wx-day-temp">${Math.round(d.max)}°/${Math.round(d.min)}°</span></div>`;
+    }).join('');
+  } catch (e) {
+    console.error('weather load failed', e);
+  }
+}
+
+// ── Fixe Karten (Region/Stars) — sind immer da, unabhängig von API ──
+const STATIC_CARDS = [
+  {
+    team: 'zweckel',
+    type: 'static',
+    ext: 'https://kevin1337pro.github.io/weltkarte-vereine/',
+    img: '/images/sv-zweckel-hero.webp',
+    crestImg: '/images/sv-zweckel-logo.jpg',
+    tag: 'ext', tagText: '↗ Heimverein',
+    kicker: 'SV Zweckel · gegr. 1929',
+    headline: 'Mehr als ein Verein. Eine Familie.',
+    blurb: 'Entdecke den SV Zweckel — Heimathstadion, Mannschaften und die interaktive Vereinskarte aller Klubs der Region.',
+    footL: 'Zur Vereinsseite', footR: 'Öffnen',
+  },
+  {
+    team: 'messi',
+    type: 'static',
+    img: '/images/messi.png',
+    tag: 'Legende',
+    kicker: 'Stars · WM 2026',
+    headline: 'Messi auf großer Bühne',
+    blurb: 'Argentinien startet als Titelverteidiger in die WM 2026 — Lionel Messi will mit 39 Jahren ein letztes Mal Geschichte schreiben.',
+    footL: 'Stars · International', footR: 'Lesen',
+    news: {
+      meta: 'WM 2026 · Special',
+      src: 'Worldfootball Special',
+      h: 'Messi und die letzte WM',
+      kicker: 'Argentinien · Titelverteidiger',
+      bodyHtml: `<p><strong>Buenos Aires.</strong> Mit 39 Jahren steht Lionel Messi vor seiner sechsten Weltmeisterschaft — und vermutlich seiner letzten. Der Druck auf Argentinien als amtierenden Champion ist enorm.</p><p>Messi selbst hat angekündigt, dass er nach diesem Turnier die Nationalmannschaft verlässt. „Ich habe alles gegeben — und werde es noch ein letztes Mal tun." Die Albiceleste startet am 12. Juni gegen Mexiko.</p><p>Die WM findet erstmals in drei Ländern statt: USA, Kanada und Mexiko. 48 Mannschaften, 104 Spiele.</p>`,
+    },
+  },
+  {
+    team: 'mbappe',
+    type: 'static',
+    img: '/images/mbappe.webp',
+    tag: 'Stars',
+    kicker: 'Frankreich · Kapitän',
+    headline: 'Mbappé führt Les Bleus an',
+    blurb: 'Als jüngster Kapitän aller Zeiten will Kylian Mbappé Frankreich zum dritten WM-Titel führen — und die Lücke nach Messi schließen.',
+    footL: 'WM 2026 · Frankreich', footR: 'Mehr',
+    news: {
+      meta: 'WM 2026 · Frankreich',
+      src: 'Worldfootball International',
+      h: 'Mbappé — Erbe einer Generation',
+      kicker: 'Kapitän mit 27 Jahren',
+      bodyHtml: `<p><strong>Paris.</strong> Kylian Mbappé hat in seiner Karriere fast alles gewonnen — nun greift er als Kapitän nach dem zweiten WM-Titel. Frankreich gilt mit Abstand als härtester Herausforderer Argentiniens.</p><p>Sein Wechsel zu Real Madrid hat ihm im Klubfußball den ersehnten Champions-League-Triumph beschert. Bei der Nationalmannschaft fehlt nur noch der zweite Stern — der erste kam 2018 in Russland.</p><p>„Ich will diese Mannschaft prägen wie Zidane es getan hat", sagt Mbappé. Frankreich startet am 14. Juni gegen Schottland.</p>`,
+    },
+  },
+  {
+    team: 'ronaldo',
+    type: 'static',
+    img: '/images/ronaldo.webp',
+    tag: 'Stars',
+    kicker: 'Portugal · Ikone',
+    headline: 'CR7 — Eine letzte WM',
+    blurb: 'Cristiano Ronaldo ist mit 41 Jahren der älteste Kapitän des Turniers — und gleichzeitig ewiger Rekordhalter im Nationalteam.',
+    footL: 'Stars · International', footR: 'Lesen',
+    news: {
+      meta: 'WM 2026 · Portugal',
+      src: 'Worldfootball Special',
+      h: 'Ronaldo will den letzten Triumph',
+      kicker: '41 Jahre · 222 Länderspiele',
+      bodyHtml: `<p><strong>Lissabon.</strong> Cristiano Ronaldo geht als ältester Spieler im Turnier in die WM 2026. Mit 41 Jahren, 222 Länderspielen und 138 Toren ist er bereits jetzt eine Legende — eine WM-Trophäe fehlt aber noch in der Sammlung.</p><p>Portugal hat eine starke Generation um Bernardo Silva, Bruno Fernandes und Rafael Leão. Ronaldo selbst ist seit drei Jahren in Saudi-Arabien aktiv und kommt nach wie vor auf Top-Quoten.</p><p>„Ich entscheide nicht, wann ich aufhöre. Mein Körper entscheidet das" — der Auftaktgegner ist die Schweiz am 13. Juni.</p>`,
+    },
+  },
+  {
+    team: 'taktik',
+    type: 'static',
+    img: '/images/taktik.webp',
+    tag: 'Taktik',
+    kicker: 'Magazin · Analyse',
+    headline: 'Taktiktafel: Wie das Pressing 2026 funktioniert',
+    blurb: 'Vom Gegenpressing zum positionellen Angriffsspiel — wie Trainer wie De Zerbi und Tedesco den modernen Fußball prägen.',
+    footL: 'Magazin · Analyse', footR: 'Lesen',
+    news: {
+      meta: 'Magazin · Taktik',
+      src: 'Taktiktafel',
+      h: 'Wie modernes Pressing wirklich funktioniert',
+      kicker: 'Vom Block zur Falle',
+      bodyHtml: `<p>Pressing ist 2026 längst nicht mehr nur „hohes Anlaufen". Moderne Teams arbeiten mit <strong>Pressing-Triggern</strong>: bestimmten Aktionen des Gegners — schlechter Rückpass, Querpass im Halbfeld — die das Pressing erst auslösen.</p><p>Die Bayern unter Kompany etwa nutzen einen 4-2-3-1, der bei Ballverlust binnen drei Sekunden in einen 4-4-2-Pressingblock umstellt. Das funktioniert nur, weil alle elf Spieler dieselben Auslöser kennen.</p><p>Beim BVB von Niko Kovač sieht das anders aus: hier wird tiefer gestanden, dann mit Tempo umgeschaltet. Beide Modelle sind erfolgreich — und beide setzen extreme Laufleistungen voraus.</p>`,
+    },
+  },
+];
+
+// ── Crest Mapping ────────────────────────────────────────────────
+const CRESTS = {
+  zweckel:        '<img src="/images/sv-zweckel-logo.jpg" alt="SV Zweckel">',
+  gladbeck:       '<svg viewBox="0 0 40 40" fill="none"><circle cx="20" cy="20" r="17" fill="none" stroke="#3eff8b" stroke-width="2"/><path d="M14 16 L20 12 L26 16 V26 L20 30 L14 26 Z" fill="none" stroke="#3eff8b" stroke-width="1.5"/><circle cx="20" cy="20" r="2.5" fill="#3eff8b"/></svg>',
+  gelsenkirchen:  '<svg viewBox="0 0 40 40" fill="none"><circle cx="20" cy="20" r="17" fill="#1f8be8" stroke="#fff" stroke-width="1.5"/><text x="20" y="18" text-anchor="middle" fill="#fff" font-family="Archivo Black" font-size="9" font-weight="900">GE</text><text x="20" y="28" text-anchor="middle" fill="#fff" font-size="5" font-weight="700" letter-spacing=".1em">STADT</text></svg>',
+  fussball:       '<svg viewBox="0 0 40 40" fill="none"><circle cx="20" cy="20" r="17" fill="#fde100" stroke="#000" stroke-width="1.5"/><text x="20" y="25" text-anchor="middle" fill="#000" font-family="Archivo Black" font-size="9" font-weight="900">DFB</text></svg>',
+  messi:          '<svg viewBox="0 0 40 40"><rect width="40" height="40" fill="#75aadb"/><text x="20" y="26" text-anchor="middle" fill="#fff" font-family="Archivo Black" font-size="14" font-weight="900">10</text></svg>',
+  mbappe:         '<svg viewBox="0 0 40 40"><rect width="40" height="40" fill="#1e3a8a"/><text x="20" y="26" text-anchor="middle" fill="#fff" font-family="Archivo Black" font-size="14" font-weight="900">10</text></svg>',
+  ronaldo:        '<svg viewBox="0 0 40 40"><rect width="40" height="40" fill="#e83b3b"/><text x="20" y="26" text-anchor="middle" fill="#fff" font-family="Archivo Black" font-size="13" font-weight="900">CR7</text></svg>',
+  taktik:         '<svg viewBox="0 0 40 40"><rect width="40" height="40" fill="#a78bfa"/><circle cx="20" cy="20" r="9" fill="none" stroke="#fff" stroke-width="1.5"/><line x1="20" y1="6" x2="20" y2="34" stroke="#fff" stroke-width="1"/></svg>',
+};
+
+// ── Source-Defaults für Live-News ──────────────────────────────────
+const SRC_META = {
+  gladbeck:      { team: 'gladbeck',      kicker: 'Stadt Gladbeck',      img: '/images/sv-zweckel-blog.webp', tag: 'Lokal' },
+  gelsenkirchen: { team: 'gelsenkirchen', kicker: 'Stadt Gelsenkirchen', img: '/images/sv-zweckel-banner.jpg', tag: 'Region' },
+  fussball:      { team: 'fussball',      kicker: 'next.fussball.de',    img: '/images/taktik.webp',          tag: 'Fußball' },
+};
+
+// ── HTML Builder ────────────────────────────────────────────────
+function escapeHtml(s) {
+  return String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+}
+
+function buildFx() {
+  return `<div class="fx fx-base"></div><div class="fx fx-irid" data-irid></div>
+    <div class="fx fx-shimmer" data-shimmer></div><div class="fx fx-spec" data-spec></div>
+    <div class="fx fx-noise" style="background-image:url(${NOISE_URL});background-size:200px;background-repeat:repeat"></div>
+    <div class="fx fx-vignette"></div><div class="fx fx-edge"></div>`;
+}
+
+function buildFront(c, idx, total) {
+  const num = String(idx+1).padStart(2,'0') + ' / ' + String(total).padStart(2,'0');
+  let tagHtml;
+  if (c.tag === 'ext') {
+    tagHtml = `<span class="card-img-tag ext">${escapeHtml(c.tagText || '↗ Extern')}</span>`;
+  } else if (c.tag === 'live') {
+    tagHtml = `<span class="card-img-tag live">${escapeHtml(c.tagText || 'Live')}</span>`;
+  } else {
+    tagHtml = `<span class="card-img-tag">${escapeHtml(c.tag || '')}</span>`;
+  }
+  const crestHtml = c.crestImg
+    ? `<img src="${c.crestImg}" alt="">`
+    : (CRESTS[c.team] || '');
+  return `<div class="card-body">
+    <div class="card-img">
+      <img src="${escapeHtml(c.img)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.opacity=.2">
+      ${tagHtml}
+      <span class="card-num">${num}</span>
+      <div class="card-crest">${crestHtml}</div>
+    </div>
+    <div class="card-content">
+      <div class="card-kicker">${escapeHtml(c.kicker)}</div>
+      <div class="card-headline">${escapeHtml(c.headline)}</div>
+      <div class="card-blurb">${escapeHtml(c.blurb)}</div>
+      <div class="card-bot">
+        <span>${escapeHtml(c.footL)}</span>
+        <span class="arr">${escapeHtml(c.footR)} <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M5 3 L9 7 L5 11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+      </div>
+    </div>
+  </div>`;
+}
+
+function buildBack(c) {
+  if (!c.news) return '';
+  const n = c.news;
+  const link = n.url ? `<a href="${escapeHtml(n.url)}" target="_blank" rel="noopener">Vollständig lesen ↗</a>` : `<span>Quelle: ${escapeHtml(n.src)}</span>`;
+  return `<div class="back-body">
+    <div class="back-meta"><span>${escapeHtml(n.meta)}</span><span class="dot"></span><span class="src">${escapeHtml(n.src)}</span></div>
+    <div class="back-kicker">${escapeHtml(n.kicker)}</div>
+    <div class="back-h">${escapeHtml(n.h)}</div>
+    <div class="back-news">${n.bodyHtml || `<p>${escapeHtml(n.body || '')}</p>`}</div>
+    <div class="back-foot">
+      <span class="flip-back" data-flip-back>← Zurück</span>
+      ${link}
+    </div>
+  </div>`;
+}
+
+function fmtDate(iso) {
+  if (!iso) return '';
+  try {
+    const d = new Date(iso);
+    return d.toLocaleDateString('de-DE', { day: '2-digit', month: 'short' }) + ' · ' +
+      d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+  } catch { return ''; }
+}
+
+// ── Live-News in Karten-Format konvertieren ─────────────────────
+function newsToCard(item) {
+  const meta = SRC_META[item.sourceKey] || SRC_META.fussball;
+  const img = item.image || meta.img;
+  return {
+    team: meta.team,
+    type: 'live',
+    img,
+    tag: meta.tag,
+    kicker: meta.kicker + (item.pubDate ? ' · ' + fmtDate(item.pubDate) : ''),
+    headline: item.title,
+    blurb: item.summary || '',
+    footL: meta.kicker,
+    footR: 'Lesen',
+    news: {
+      meta: meta.kicker,
+      src: item.source,
+      h: item.title,
+      kicker: item.pubDate ? fmtDate(item.pubDate) : meta.kicker,
+      bodyHtml: item.bodyHtml || `<p>${escapeHtml(item.summary || '')}</p>`,
+      url: item.url,
+    },
+  };
+}
+
+// ── Cards rendern ────────────────────────────────────────────────
+function renderCards(cards) {
+  const grid = document.getElementById('grid');
+  grid.innerHTML = '';
+  if (!cards.length) {
+    grid.innerHTML = '<div class="empty-state"><div class="em-h">Keine News gefunden</div><div>Versuche es in ein paar Minuten erneut.</div></div>';
+    return;
+  }
+  const total = cards.length;
+  cards.forEach((c, idx) => {
+    const isLink = c.team === 'zweckel';
+    const el = document.createElement(isLink ? 'a' : 'div');
+    el.className = 'card';
+    el.dataset.team = c.team;
+    if (isLink) {
+      el.href = c.ext;
+      el.target = '_blank';
+      el.rel = 'noopener';
+    }
+    el.innerHTML = `<div class="card-tilt"><div class="card-flip">
+      <div class="face front">${buildFx()}${buildFront(c, idx, total)}</div>
+      ${c.news ? `<div class="face back">${buildFx()}${buildBack(c)}</div>` : ''}
+    </div></div>`;
+    grid.appendChild(el);
+  });
+  attachInteractions();
+}
+
+// ── Match-Strip füllen mit aktuellen Schlagzeilen ────────────────
+function renderMatchStrip(items) {
+  const strip = document.getElementById('matchStrip');
+  if (!items.length) {
+    strip.innerHTML = '<div class="minimatch"><span class="lg">News</span><span class="tm">Keine aktuellen Beiträge</span></div>';
+    return;
+  }
+  strip.innerHTML = items.slice(0, 8).map((it) => {
+    const lg = (SRC_META[it.sourceKey]?.kicker || it.source).split('·')[0].trim();
+    return `<div class="minimatch"><span class="lg">${escapeHtml(lg)}</span><span class="tm">${escapeHtml((it.title || '').slice(0, 60))}${it.title && it.title.length > 60 ? '…' : ''}</span></div>`;
+  }).join('');
+}
+
+// ── Iridescent Tilt + Flip ──────────────────────────────────────
+let tipShown = false;
+const tip = document.getElementById('tip');
+function showTip() {
+  if (tipShown) return; tipShown = true;
+  tip.classList.add('show');
+  setTimeout(() => tip.classList.remove('show'), 3200);
+}
+
+function attachInteractions() {
+  document.querySelectorAll('.card').forEach((card) => {
+    if (card.dataset.bound) return;
+    card.dataset.bound = '1';
+    const tilt = card.querySelector('.card-tilt');
+    const lIrid = card.querySelectorAll('[data-irid]');
+    const lShim = card.querySelectorAll('[data-shimmer]');
+    const lSpec = card.querySelectorAll('[data-spec]');
+    let nx=0, ny=0, hov=false, raf=null;
+
+    function update(){
+      raf=null;
+      const rx = -ny*8, ry = nx*8;
+      tilt.style.transform = `rotateX(${rx}deg) rotateY(${ry}deg)`;
+      const bh = 90 + nx*120 + ny*60;
+      const ang = 135 + ny*45;
+      const grad = `linear-gradient(${ang}deg,
+        hsl(${bh}deg,88%,58%),hsl(${bh+55}deg,94%,62%),hsl(${bh+115}deg,94%,62%),
+        hsl(${bh+175}deg,88%,60%),hsl(${bh+235}deg,88%,60%),
+        hsl(${bh+295}deg,94%,62%),hsl(${bh+355}deg,88%,58%))`;
+      lIrid.forEach(el=>el.style.background=grad);
+      const sx=50+nx*28, sy=50+ny*28;
+      const shim=`conic-gradient(from ${bh*.5}deg at ${sx}% ${sy}%,
+        #ff6b6b44,#ffd93d44,#6bcb7744,#4d96ff44,#c77dff44,#ff6b6b44)`;
+      lShim.forEach(el=>el.style.background=shim);
+      const spx=50+nx*38, spy=50+ny*38;
+      const spec=`radial-gradient(circle at ${spx}% ${spy}%,
+        rgba(255,255,255,.35) 0%,rgba(255,255,255,.06) 28%,transparent 55%)`;
+      lSpec.forEach(el=>el.style.background=spec);
+      if (hov) raf=requestAnimationFrame(update);
+    }
+    card.addEventListener('mouseenter',()=>{
+      hov=true; if(!raf) raf=requestAnimationFrame(update);
+      if (card.dataset.team !== 'zweckel') showTip();
+    });
+    card.addEventListener('mouseleave',()=>{
+      hov=false; nx=0; ny=0;
+      tilt.style.transition='transform .5s cubic-bezier(.23,1,.32,1)';
+      tilt.style.transform='rotateX(0) rotateY(0)';
+      setTimeout(()=>{tilt.style.transition='transform .12s ease-out';},520);
+    });
+    card.addEventListener('mousemove',e=>{
+      const r=card.getBoundingClientRect();
+      nx=Math.max(-1,Math.min(1,(e.clientX-r.left-r.width/2)/(r.width/2)));
+      ny=Math.max(-1,Math.min(1,(e.clientY-r.top-r.height/2)/(r.height/2)));
+      if(!raf) raf=requestAnimationFrame(update);
+    });
+    card.addEventListener('click',e=>{
+      if (card.dataset.team === 'zweckel') return;
+      // Klicks innerhalb der back auf Links nicht abfangen
+      if (e.target.tagName === 'A' && e.target.closest('.face.back')) return;
+      e.preventDefault();
+      card.classList.toggle('flipped');
+      nx=0; ny=0;
+      tilt.style.transition='transform .5s cubic-bezier(.23,1,.32,1)';
+      tilt.style.transform='rotateX(0) rotateY(0)';
+      setTimeout(()=>{tilt.style.transition='transform .12s ease-out';},520);
+    });
+  });
+}
+
+// ── News-Loader ──────────────────────────────────────────────────
+async function loadNews() {
+  const refreshTxt = document.getElementById('refreshTxt');
+  const livePillTxt = document.getElementById('livePillTxt');
+  refreshTxt.textContent = 'Lade News…';
+  try {
+    const res = await fetch('/api/news', { cache: 'no-cache' });
+    const data = await res.json();
+    const items = data.items || [];
+
+    // Mische: 1 Star-Karte (Messi) → 2 Live-News → SV Zweckel → Rest abwechselnd
+    const liveCards = items.map(newsToCard);
+    const cards = [];
+    const staticByTeam = Object.fromEntries(STATIC_CARDS.map(c => [c.team, c]));
+
+    // Reihenfolge: Zweckel-Hero (immer Position 1), Messi, dann je 1 Live-News pro Quelle, dann Mbappé, Taktik, Ronaldo, Rest
+    cards.push(staticByTeam.zweckel);
+
+    const byKey = (k) => liveCards.filter(c => c.team === k);
+    const gladbeck = byKey('gladbeck');
+    const gelsen = byKey('gelsenkirchen');
+    const fussball = byKey('fussball');
+
+    if (gladbeck[0]) cards.push(gladbeck.shift());
+    cards.push(staticByTeam.messi);
+    if (gelsen[0]) cards.push(gelsen.shift());
+    if (fussball[0]) cards.push(fussball.shift());
+    cards.push(staticByTeam.mbappe);
+    if (gladbeck[0]) cards.push(gladbeck.shift());
+    if (gelsen[0]) cards.push(gelsen.shift());
+    cards.push(staticByTeam.taktik);
+    if (fussball[0]) cards.push(fussball.shift());
+    cards.push(staticByTeam.ronaldo);
+    // Rest anhängen
+    cards.push(...gladbeck, ...gelsen, ...fussball);
+
+    renderCards(cards);
+    renderMatchStrip(items);
+
+    const when = data.updatedAt ? new Date(data.updatedAt) : new Date();
+    const t = when.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+    refreshTxt.textContent = `Live · ${items.length} News · ${t}`;
+    livePillTxt.textContent = `${items.length} News`;
+  } catch (e) {
+    console.error('news load failed', e);
+    refreshTxt.textContent = 'Fehler beim Laden';
+    // Fallback: nur Static Cards
+    renderCards(STATIC_CARDS);
+  }
+}
+
+// ── Initial load + Polling ───────────────────────────────────────
+loadWeather();
+loadNews();
+setInterval(loadWeather, 5 * 60 * 1000);   // alle 5 Min Wetter neu
+setInterval(loadNews,    3 * 60 * 1000);   // alle 3 Min News neu
+</script>
+</body>
+</html>

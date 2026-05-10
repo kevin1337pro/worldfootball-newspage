@@ -1,0 +1,19 @@
+{
+  "name": "worldfootball-newspage",
+  "version": "1.0.0",
+  "description": "Worldfootball News Page – aggregates news from next.fussball.de, gladbeck.de, gelsenkirchen.de + weather for Gladbeck",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "cheerio": "^1.0.0",
+    "express": "^4.21.2",
+    "rss-parser": "^3.13.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

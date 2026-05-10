@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Worldfootball — Fußball aus der Region</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&family=Archivo+Black&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root[data-theme="dark"]{
+  --bg:#08090d;--bg2:#0f1117;--surface:#13151c;
+  --line:rgba(255,255,255,.08);
+  --text:#f4f5f8;--text-dim:rgba(255,255,255,.55);--text-faint:rgba(255,255,255,.32);
+  --accent:#3eff8b;--pitch1:#0c2a16;--pitch2:#091e10;
+}
+:root[data-theme="light"]{
+  --bg:#f4f5f8;--bg2:#ebedf2;--surface:#ffffff;
+  --line:rgba(10,12,20,.10);
+  --text:#0a0c14;--text-dim:rgba(10,12,20,.62);--text-faint:rgba(10,12,20,.38);
+  --accent:#0e8f43;--pitch1:#1a5a2a;--pitch2:#147028;
+}
+
+html,body{width:100%;min-height:100%;background:var(--bg);color:var(--text);
+  font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased;
+  transition:background .35s ease,color .35s ease}
+body{overflow-x:hidden}
+
+/* Pitch background */
+.pitch-bg{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.55;transition:opacity .35s}
+:root[data-theme="light"] .pitch-bg{opacity:.18}
+.pitch-bg::before{content:'';position:absolute;inset:0;
+  background:
+    radial-gradient(ellipse 70% 55% at 50% 35%,rgba(62,255,139,.06),transparent 70%),
+    repeating-linear-gradient(90deg,var(--pitch1) 0,var(--pitch1) 80px,var(--pitch2) 80px,var(--pitch2) 160px);
+  filter:blur(1px)}
+.pitch-bg::after{content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse 80% 60% at 50% 50%,transparent 30%,var(--bg) 80%)}
+
+/* Header */
+.hdr{position:relative;z-index:10;padding:22px 40px;display:flex;align-items:center;
+  justify-content:space-between;border-bottom:1px solid var(--line);
+  background:color-mix(in srgb,var(--bg) 80%,transparent);backdrop-filter:blur(14px)}
+.brand{display:flex;align-items:center;gap:12px}
+.brand-mark{width:36px;height:36px;border-radius:50%;
+  background:conic-gradient(from 0deg,#3eff8b,#6bcbff,#c77dff,#ff6b9d,#ffd93d,#3eff8b);
+  display:flex;align-items:center;justify-content:center;position:relative;
+  box-shadow:0 0 0 1px rgba(255,255,255,.2),0 8px 22px rgba(62,255,139,.25)}
+.brand-mark::before{content:'';position:absolute;inset:6px;border-radius:50%;
+  background:var(--bg);border:1.5px solid var(--text)}
+.brand-mark::after{content:'⚽';position:relative;font-size:14px;z-index:1}
+.brand-name{font-family:'Archivo Black',sans-serif;font-size:18px;letter-spacing:-.01em;text-transform:uppercase}
+.brand-name span{color:var(--accent)}
+.brand-sub{font-size:9.5px;letter-spacing:.28em;text-transform:uppercase;color:var(--text-faint);margin-top:2px}
+
+.nav{display:flex;gap:28px;font-size:12px;font-weight:500;color:var(--text-dim);letter-spacing:.04em}
+.nav a{color:inherit;text-decoration:none;cursor:pointer;transition:color .2s}
+.nav a:hover{color:var(--text)}
+.nav a.active{color:var(--text)}
+.nav a.active::after{content:'';display:block;height:2px;background:var(--accent);margin-top:6px;border-radius:2px}
+
+.hdr-r{display:flex;align-items:center;gap:14px}
+.theme-tog{width:42px;height:24px;border-radius:100px;background:var(--surface);
+  border:1px solid var(--line);position:relative;cursor:pointer;transition:background .25s}
+.theme-tog::after{content:'';position:absolute;width:18px;height:18px;border-radius:50%;
+  background:var(--text);top:2px;left:2px;transition:transform .25s,background .25s}
+:root[data-theme="dark"] .theme-tog::after{transform:translateX(18px)}
+.live-pill{display:flex;align-items:center;gap:8px;padding:5px 11px;border-radius:100px;
+  background:rgba(255,60,60,.12);border:1px solid rgba(255,60,60,.35);
+  font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#ff5050;font-weight:600}
+.live-dot{width:6px;height:6px;border-radius:50%;background:#ff5050;animation:pulse 1.4s infinite}
+@keyframes pulse{50%{opacity:.3}}
+
+@media(max-width:760px){.hdr{padding:14px 18px;flex-wrap:wrap;gap:10px}.nav{display:none}.brand-sub{display:none}}
+
+/* Hero */
+.hero{position:relative;z-index:10;padding:54px 40px 18px;display:flex;justify-content:space-between;
+  align-items:flex-end;gap:30px;flex-wrap:wrap}
+.hero-l{max-width:680px}
+.eyebrow{font-size:10.5px;letter-spacing:.42em;text-transform:uppercase;color:var(--accent);
+  font-weight:600;margin-bottom:14px}
+.hero h1{font-family:'Archivo Black',sans-serif;font-size:clamp(34px,6vw,68px);
+  line-height:.95;letter-spacing:-.02em;text-wrap:balance}
+.hero h1 i{font-style:normal;
+  background:linear-gradient(110deg,#3eff8b 0%,#6bcbff 30%,#c77dff 60%,#ff6b9d 100%);
+  -webkit-background-clip:text;background-clip:text;color:transparent}
+.hero p{margin-top:14px;font-size:15px;line-height:1.55;color:var(--text-dim);max-width:560px}
+.hero-r{display:flex;flex-direction:column;align-items:flex-end;gap:8px;font-size:11px;
+  color:var(--text-faint);letter-spacing:.18em;text-transform:uppercase}
+.hero-r .clock{font-family:'Bebas Neue',sans-serif;font-size:34px;letter-spacing:.02em;color:var(--text);line-height:1}
+.hero-r .date{font-size:10.5px;letter-spacing:.25em}
+
+.match-strip{margin:24px 40px 0;position:relative;z-index:10;display:flex;gap:10px;
+  overflow-x:auto;padding-bottom:6px;scrollbar-width:none}
+.match-strip::-webkit-scrollbar{display:none}
+.minimatch{flex:0 0 auto;display:flex;align-items:center;gap:10px;padding:9px 14px;
+  background:var(--surface);border:1px solid var(--line);border-radius:8px;font-size:11px}
+.minimatch .lg{font-size:9px;color:var(--text-faint);letter-spacing:.2em;text-transform:uppercase}
+.minimatch .sc{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:.05em}
+.minimatch .tm{color:var(--text-dim);min-width:0;white-space:nowrap}
+.minimatch.live .sc{color:#ff5050}
+.minimatch .min{font-size:9.5px;color:#ff5050;font-weight:700}
+
+@media(max-width:760px){.hero{padding:32px 18px 12px}.match-strip{margin:18px 18px 0}}
+
+/* Section title */
+.sec-ttl{position:relative;z-index:10;display:flex;align-items:baseline;justify-content:space-between;
+  padding:46px 40px 18px;gap:18px;flex-wrap:wrap}
+.sec-ttl h2{font-family:'Archivo Black',sans-serif;font-size:24px;letter-spacing:-.01em;text-transform:uppercase}
+.sec-ttl .hint{font-size:10.5px;letter-spacing:.28em;text-transform:uppercase;color:var(--text-faint)}
+.sec-ttl .hint i{color:var(--accent);font-style:normal}
+@media(max-width:760px){.sec-ttl{padding:30px 18px 14px}}
+
+/* Card grid */
+.grid{position:relative;z-index:10;padding:0 40px 80px;display:grid;
+  grid-template-columns:repeat(3,1fr);gap:22px;max-width:1400px;margin:0 auto}
+@media(max-width:1100px){.grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:680px){.grid{padding:0 18px 60px;grid-template-columns:1fr;gap:16px}}
+
+/* ── Card root: tilt host (rotateX/Y from JS) ───────────────── */
+.card{position:relative;aspect-ratio:4/5;perspective:1400px;cursor:pointer;
+  transition:filter .2s ease;will-change:transform;text-decoration:none;color:inherit;display:block}
+.card:hover{filter:drop-shadow(0 24px 50px rgba(0,0,0,.45)) drop-shadow(0 0 30px var(--card-glow,rgba(62,255,139,.18)))}
+:root[data-theme="light"] .card{filter:drop-shadow(0 6px 14px rgba(10,12,20,.06))}
+:root[data-theme="light"] .card:hover{filter:drop-shadow(0 24px 50px rgba(10,12,20,.18)) drop-shadow(0 0 30px var(--card-glow,rgba(14,143,67,.16)))}
+
+/* Tilt layer: holds rotateX/Y from mouse — preserves children */
+.card-tilt{position:relative;width:100%;height:100%;transform-style:preserve-3d;
+  transition:transform .12s ease-out}
+
+/* Flip layer: rotateY 0/180 on click */
+.card-flip{position:relative;width:100%;height:100%;transform-style:preserve-3d;
+  transition:transform .65s cubic-bezier(.5,0,.3,1)}
+.card.flipped .card-flip{transform:rotateY(180deg)}
+
+.face{position:absolute;inset:0;border-radius:18px;background:var(--surface);
+  border:1px solid var(--line);overflow:hidden;
+  backface-visibility:hidden;-webkit-backface-visibility:hidden;
+  transition:opacity 0s linear .325s}
+.face.back{transform:rotateY(180deg);opacity:0}
+.card.flipped .face.front{opacity:0}
+.card.flipped .face.back{opacity:1}
+
+/* Layered iridescent FX (apply to both faces) */
+.fx{position:absolute;inset:0;pointer-events:none;border-radius:inherit}
+.fx-base{background:
+  radial-gradient(ellipse 80% 60% at 30% 20%,color-mix(in srgb,var(--text) 6%,transparent),transparent 70%),
+  linear-gradient(160deg,var(--surface) 0%,var(--bg2) 100%)}
+.fx-irid{mix-blend-mode:color;opacity:0;transition:opacity .25s}
+.fx-shimmer{mix-blend-mode:screen;opacity:0;transition:opacity .25s}
+.fx-spec{mix-blend-mode:screen;opacity:0;transition:opacity .15s}
+.fx-noise{mix-blend-mode:overlay;opacity:.04}
+.fx-vignette{background:radial-gradient(ellipse 90% 90% at 50% 50%,transparent 50%,rgba(0,0,0,.35) 100%);mix-blend-mode:multiply}
+:root[data-theme="light"] .fx-vignette{background:radial-gradient(ellipse 90% 90% at 50% 50%,transparent 55%,rgba(0,0,0,.08) 100%)}
+.fx-edge{border:1px solid color-mix(in srgb,var(--text) 12%,transparent);
+  box-shadow:inset 0 1px 0 color-mix(in srgb,var(--text) 12%,transparent),inset 0 -1px 0 rgba(0,0,0,.3);
+  border-radius:inherit}
+
+.card:hover:not(.flipped) .fx-irid{opacity:.55}
+.card:hover:not(.flipped) .fx-shimmer{opacity:.22}
+.card:hover:not(.flipped) .fx-spec{opacity:1}
+.card.flipped .fx-irid{opacity:.45}
+
+/* ── Front content ─────────────────────────────────────────── */
+.card-body{position:relative;width:100%;height:100%;padding:18px;display:flex;
+  flex-direction:column;gap:12px;z-index:2}
+
+.card-img{position:relative;height:38%;border-radius:11px;overflow:hidden;
+  background:var(--bg2);flex-shrink:0}
+.card-img img{width:100%;height:100%;object-fit:cover;display:block;
+  transition:transform .5s ease}
+.card:hover .card-img img{transform:scale(1.04)}
+.card-img::after{content:'';position:absolute;inset:0;border-radius:inherit;
+  background:linear-gradient(180deg,transparent 50%,rgba(0,0,0,.55) 100%);pointer-events:none}
+.card-img-tag{position:absolute;top:10px;left:10px;display:inline-flex;align-items:center;gap:6px;
+  padding:5px 10px;font-size:9px;letter-spacing:.2em;text-transform:uppercase;font-weight:700;
+  background:rgba(0,0,0,.55);backdrop-filter:blur(8px);color:#fff;border-radius:100px;z-index:2}
+.card-img-tag.live{background:rgba(255,60,60,.85);color:#fff}
+.card-img-tag.live::before{content:'';width:5px;height:5px;border-radius:50%;background:#fff;animation:pulse 1.4s infinite}
+.card-img-tag.ext{background:color-mix(in srgb,var(--accent) 80%,#000);color:#000}
+.card-num{position:absolute;top:10px;right:12px;font-family:'Bebas Neue',sans-serif;
+  font-size:13px;letter-spacing:.1em;color:rgba(255,255,255,.85);z-index:2;text-shadow:0 1px 4px rgba(0,0,0,.5)}
+.card-crest{position:absolute;bottom:-18px;right:14px;width:48px;height:48px;border-radius:12px;
+  display:flex;align-items:center;justify-content:center;z-index:3;
+  background:var(--surface);border:1px solid var(--line);
+  box-shadow:0 6px 18px rgba(0,0,0,.35)}
+.card-crest svg{width:30px;height:30px}
+
+.card-content{flex:1;display:flex;flex-direction:column;gap:8px;min-height:0;padding-top:6px}
+.card-kicker{font-size:10px;letter-spacing:.28em;text-transform:uppercase;
+  color:var(--card-color,var(--accent));font-weight:700}
+.card-headline{font-family:'Archivo Black',sans-serif;font-size:19px;line-height:1.12;
+  letter-spacing:-.01em;text-wrap:balance}
+.card-blurb{font-size:12.5px;line-height:1.5;color:var(--text-dim);
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+
+.card-bot{display:flex;align-items:center;justify-content:space-between;font-size:10px;
+  letter-spacing:.18em;text-transform:uppercase;color:var(--text-faint);font-weight:600;margin-top:auto}
+.card-bot .arr{display:inline-flex;align-items:center;gap:6px;color:var(--text-dim);transition:gap .25s,color .25s}
+.card-bot .arr svg{transition:transform .25s}
+.card:hover .card-bot .arr{gap:10px;color:var(--text)}
+.card:hover .card-bot .arr svg{transform:translateX(2px)}
+
+/* ── Back content (news article) ───────────────────────────── */
+.back-body{position:relative;width:100%;height:100%;padding:22px;display:flex;
+  flex-direction:column;gap:10px;z-index:2;overflow:hidden}
+.back-meta{display:flex;align-items:center;justify-content:space-between;font-size:9.5px;
+  letter-spacing:.22em;text-transform:uppercase;color:var(--text-faint);font-weight:600}
+.back-meta .dot{width:3px;height:3px;border-radius:50%;background:var(--text-faint);margin:0 8px}
+.back-meta .src{color:var(--card-color,var(--accent))}
+.back-kicker{font-size:9.5px;letter-spacing:.28em;text-transform:uppercase;
+  color:var(--card-color,var(--accent));font-weight:700;margin-top:2px}
+.back-h{font-family:'Archivo Black',sans-serif;font-size:18px;line-height:1.15;
+  letter-spacing:-.01em;text-wrap:balance}
+.back-news{flex:1;overflow-y:auto;padding-right:6px;font-size:12px;line-height:1.7;
+  color:var(--text-dim);scrollbar-width:thin;scrollbar-color:var(--text-faint) transparent}
+.back-news::-webkit-scrollbar{width:5px}
+.back-news::-webkit-scrollbar-thumb{background:var(--text-faint);border-radius:3px}
+.back-news p+p{margin-top:9px}
+.back-news strong{color:var(--text);font-weight:600}
+.back-news .quote{margin:10px 0;padding:8px 12px;border-left:2px solid var(--card-color,var(--accent));
+  font-style:italic;color:var(--text-dim);font-size:11.5px}
+.back-news .stat-row{display:flex;justify-content:space-between;padding:5px 0;
+  border-bottom:1px dashed var(--line);font-size:11px}
+.back-news .stat-row:last-child{border-bottom:none}
+.back-news .stat-row span:first-child{color:var(--text-dim)}
+.back-news .stat-row span:last-child{font-family:'Bebas Neue',sans-serif;font-size:14px;color:var(--text);letter-spacing:.04em}
+.back-foot{display:flex;align-items:center;justify-content:space-between;font-size:9.5px;
+  letter-spacing:.18em;text-transform:uppercase;color:var(--text-faint);font-weight:600;
+  padding-top:10px;border-top:1px solid var(--line)}
+.back-foot .flip-back{cursor:pointer;color:var(--text-dim);display:inline-flex;align-items:center;gap:5px}
+.back-foot .flip-back:hover{color:var(--text)}
+
+/* Per-card colors */
+.card[data-team="zweckel"]    {--card-color:#1d62c4;--card-glow:rgba(29,98,196,.32)}
+.card[data-team="westfalen"]  {--card-color:#e83b3b;--card-glow:rgba(232,59,59,.30)}
+.card[data-team="landesliga"] {--card-color:#f0a830;--card-glow:rgba(240,168,48,.30)}
+.card[data-team="gladbeck"]   {--card-color:#3eff8b;--card-glow:rgba(62,255,139,.28)}
+.card[data-team="bvb"]        {--card-color:#fde100;--card-glow:rgba(253,225,0,.32)}
+.card[data-team="schalke"]    {--card-color:#1f8be8;--card-glow:rgba(31,139,232,.40)}
+.card[data-team="bochum"]     {--card-color:#1769b0;--card-glow:rgba(23,105,176,.34)}
+.card[data-team="bundesliga"] {--card-color:#d20515;--card-glow:rgba(210,5,21,.30)}
+.card[data-team="spielplan"]  {--card-color:#a78bfa;--card-glow:rgba(167,139,250,.30)}
+.card[data-team="transfer"]   {--card-color:#22d3ee;--card-glow:rgba(34,211,238,.30)}
+.card[data-team="derby"]      {--card-color:#ff6b9d;--card-glow:rgba(255,107,157,.32)}
+.card[data-team="torjaeger"]  {--card-color:#f97316;--card-glow:rgba(249,115,22,.32)}
+
+/* SV Zweckel — featured */
+.card[data-team="zweckel"] .face{
+  background:linear-gradient(160deg,#0d2a55 0%,#1d62c4 70%,#2d7be0 100%);
+  border:1px solid rgba(255,255,255,.18)}
+.card[data-team="zweckel"] .card-blurb{color:rgba(255,255,255,.78)}
+.card[data-team="zweckel"] .card-bot{color:rgba(255,255,255,.55)}
+.card[data-team="zweckel"] .card-bot .arr{color:rgba(255,255,255,.85)}
+.card[data-team="zweckel"] .card-headline,
+.card[data-team="zweckel"] .card-kicker{color:#fff}
+.card[data-team="zweckel"] .card-crest{background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.3)}
+
+/* Footer */
+.ftr{position:relative;z-index:10;padding:36px 40px;border-top:1px solid var(--line);
+  display:flex;justify-content:space-between;align-items:center;gap:18px;flex-wrap:wrap;
+  font-size:11px;color:var(--text-faint);letter-spacing:.04em}
+.ftr a{color:inherit;text-decoration:none;margin-right:18px}
+.ftr a:hover{color:var(--text)}
+@media(max-width:760px){.ftr{padding:24px 18px}}
+
+/* Tip toast on first hover */
+.tip{position:fixed;bottom:30px;left:50%;transform:translateX(-50%) translateY(80px);
+  padding:11px 22px;background:var(--surface);border:1px solid var(--line);border-radius:100px;
+  font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--text-dim);font-weight:600;
+  box-shadow:0 12px 30px rgba(0,0,0,.4);z-index:50;pointer-events:none;
+  transition:transform .35s cubic-bezier(.3,1.4,.5,1),opacity .35s;opacity:0}
+.tip.show{transform:translateX(-50%) translateY(0);opacity:1}
+.tip i{color:var(--accent);font-style:normal}
+</style>
+</head>
+<body>
+
+<div class="pitch-bg" aria-hidden="true"></div>
+
+<header class="hdr">
+  <div class="brand">
+    <div class="brand-mark"></div>
+    <div>
+      <div class="brand-name">World<span>football</span>.com</div>
+      <div class="brand-sub">Region Ruhrgebiet · Gladbeck</div>
+    </div>
+  </div>
+  <nav class="nav">
+    <a class="active">Heute</a>
+    <a>Westfalenliga</a>
+    <a>Landesliga</a>
+    <a>Bundesliga</a>
+    <a>Tabellen</a>
+    <a>Transfer</a>
+  </nav>
+  <div class="hdr-r">
+    <div class="live-pill"><span class="live-dot"></span>3 Live</div>
+    <button class="theme-tog" id="themeTog" aria-label="Theme umschalten"></button>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="hero-l">
+    <div class="eyebrow">Spieltag · 32. ⟂ Saison 25/26</div>
+    <h1>Fußball aus<br>der <i>Nachbarschaft</i> bis zur Bundesliga.</h1>
+    <p>Live-News, Spielpläne und Geschichten aus Gladbeck, dem Ruhrgebiet und ganz Westfalen — von der Kreisliga bis zum Westfalenstadion. Alles auf einer Seite.</p>
+  </div>
+  <div class="hero-r">
+    <div class="clock" id="clock">14:32</div>
+    <div class="date" id="date">Di · 5. Mai 2026</div>
+  </div>
+</section>
+
+<div class="match-strip">
+  <div class="minimatch live"><span class="lg">Westfalenliga</span><span class="tm">SVZ</span><span class="sc">2:1</span><span class="tm">RWA</span><span class="min">73'</span></div>
+  <div class="minimatch live"><span class="lg">Bundesliga</span><span class="tm">BVB</span><span class="sc">3:2</span><span class="tm">FCB</span><span class="min">81'</span></div>
+  <div class="minimatch"><span class="lg">Bundesliga</span><span class="tm">VfL</span><span class="sc">15:30</span><span class="tm">S04</span></div>
+  <div class="minimatch"><span class="lg">Landesliga</span><span class="tm">SuS</span><span class="sc">18:00</span><span class="tm">VfB</span></div>
+  <div class="minimatch live"><span class="lg">Westfalenliga</span><span class="tm">PSV</span><span class="sc">0:0</span><span class="tm">TuS</span><span class="min">62'</span></div>
+  <div class="minimatch"><span class="lg">2. Bundesliga</span><span class="tm">F95</span><span class="sc">20:30</span><span class="tm">SCP</span></div>
+  <div class="minimatch"><span class="lg">Kreisliga A</span><span class="tm">DJK</span><span class="sc">15:15</span><span class="tm">FCG</span></div>
+</div>
+
+<div class="sec-ttl">
+  <h2>Heute im Überblick</h2>
+  <div class="hint">Hover für <i>Iridescent Tilt</i> · Klick zum <i>Umblättern</i></div>
+</div>
+
+<main class="grid" id="grid"></main>
+
+<footer class="ftr">
+  <div>© 2026 Worldfootball.com · Inoffizielles Fan-Projekt aus Gladbeck-Zweckel</div>
+  <div>
+    <a>Impressum</a>
+    <a>Datenschutz</a>
+    <a>Kontakt</a>
+    <a>RSS</a>
+  </div>
+</footer>
+
+<div class="tip" id="tip">⚽ Klick auf eine Karte für die <i>News</i></div>
+
+<script>
+// ── Theme toggle ─────────────────────────────────────────────────
+const root = document.documentElement;
+root.setAttribute('data-theme', localStorage.getItem('wf-theme') || 'dark');
+document.getElementById('themeTog').addEventListener('click', () => {
+  const next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+  root.setAttribute('data-theme', next);
+  localStorage.setItem('wf-theme', next);
+});
+
+// ── Clock ────────────────────────────────────────────────────────
+function tick() {
+  const d = new Date();
+  document.getElementById('clock').textContent =
+    `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+  const days = ['So','Mo','Di','Mi','Do','Fr','Sa'];
+  const months = ['Jan','Feb','März','April','Mai','Juni','Juli','Aug','Sept','Okt','Nov','Dez'];
+  document.getElementById('date').textContent =
+    `${days[d.getDay()]} · ${d.getDate()}. ${months[d.getMonth()]} ${d.getFullYear()}`;
+}
+tick(); setInterval(tick, 30000);
+
+// ── Noise texture ────────────────────────────────────────────────
+const NOISE_URL = (() => {
+  const c = document.createElement('canvas'); c.width = c.height = 200;
+  const ctx = c.getContext('2d'), d = ctx.createImageData(200,200);
+  for (let i=0;i<d.data.length;i+=4){const v=Math.random()*255|0;d.data[i]=d.data[i+1]=d.data[i+2]=v;d.data[i+3]=255;}
+  ctx.putImageData(d,0,0); return c.toDataURL();
+})();
+
+// ── Crest factories ──────────────────────────────────────────────
+const CRESTS = {
+  zweckel: `<svg viewBox="0 0 40 40" fill="none"><path d="M20 4 L34 11 V25 C34 32 28 36 20 38 C12 36 6 32 6 25 V11 Z" fill="#fff" stroke="#1d62c4" stroke-width="1.5"/><text x="20" y="22" text-anchor="middle" fill="#1d62c4" font-family="Archivo Black" font-size="9" font-weight="900">SV</text><text x="20" y="31" text-anchor="middle" fill="#1d62c4" font-family="Archivo Black" font-size="5" font-weight="900">ZWECKEL</text></svg>`,
+  bvb: `<svg viewBox="0 0 40 40" fill="none"><circle cx="20" cy="20" r="17" fill="#fde100" stroke="#000" stroke-width="1.5"/><text x="20" y="25" text-anchor="middle" fill="#000" font-family="Archivo Black" font-size="11" font-weight="900">BVB</text></svg>`,
+  schalke: `<svg viewBox="0 0 40 40" fill="none"><circle cx="20" cy="20" r="17" fill="#1f8be8" stroke="#fff" stroke-width="1.5"/><text x="20" y="18" text-anchor="middle" fill="#fff" font-family="Archivo Black" font-size="9" font-weight="900">S04</text><text x="20" y="28" text-anchor="middle" fill="#fff" font-size="5" font-weight="700" letter-spacing=".1em">SCHALKE</text></svg>`,
+  bochum: `<svg viewBox="0 0 40 40" fill="none"><path d="M20 5 L33 12 V26 C33 32 27 36 20 37 C13 36 7 32 7 26 V12 Z" fill="#1769b0" stroke="#fff" stroke-width="1.5"/><text x="20" y="24" text-anchor="middle" fill="#fff" font-family="Archivo Black" font-size="10" font-weight="900">VfL</text></svg>`,
+  westfalen: `<svg viewBox="0 0 40 40" fill="none"><circle cx="20" cy="20" r="17" fill="#e83b3b" stroke="#fff" stroke-width="1.5"/><path d="M20 8 L25 17 H35 L27 23 L30 32 L20 26 L10 32 L13 23 L5 17 H15 Z" fill="#fff"/></svg>`,
+  landesliga: `<svg viewBox="0 0 40 40" fill="none"><rect x="6" y="6" width="28" height="28" rx="4" fill="#f0a830"/><text x="20" y="25" text-anchor="middle" fill="#000" font-family="Archivo Black" font-size="14" font-weight="900">L</text></svg>`,
+  gladbeck: `<svg viewBox="0 0 40 40" fill="none"><circle cx="20" cy="20" r="17" fill="none" stroke="#3eff8b" stroke-width="2"/><path d="M14 16 L20 12 L26 16 V26 L20 30 L14 26 Z" fill="none" stroke="#3eff8b" stroke-width="1.5"/><circle cx="20" cy="20" r="2.5" fill="#3eff8b"/></svg>`,
+  bundesliga: `<svg viewBox="0 0 40 40" fill="none"><rect x="6" y="11" width="28" height="18" rx="3" fill="#d20515"/><text x="20" y="24" text-anchor="middle" fill="#fff" font-family="Archivo Black" font-size="9" font-weight="900">BL</text></svg>`,
+  spielplan: `<svg viewBox="0 0 40 40" fill="none"><rect x="7" y="9" width="26" height="24" rx="3" fill="#a78bfa"/><line x1="7" y1="15" x2="33" y2="15" stroke="#fff" stroke-width="1.5"/><circle cx="13" cy="12" r="1.5" fill="#fff"/><circle cx="27" cy="12" r="1.5" fill="#fff"/><line x1="14" y1="22" x2="26" y2="22" stroke="#fff" stroke-width="1"/><line x1="14" y1="27" x2="22" y2="27" stroke="#fff" stroke-width="1"/></svg>`,
+  transfer: `<svg viewBox="0 0 40 40" fill="none"><circle cx="20" cy="20" r="17" fill="#22d3ee"/><path d="M14 17 H24 M20 13 L24 17 L20 21 M26 23 H16 M20 27 L16 23 L20 19" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>`,
+  derby: `<svg viewBox="0 0 40 40" fill="none"><circle cx="20" cy="20" r="17" fill="#ff6b9d"/><path d="M14 14 L20 20 L14 26 M26 14 L20 20 L26 26" stroke="#fff" stroke-width="2.5" stroke-linecap="round" fill="none"/></svg>`,
+  torjaeger: `<svg viewBox="0 0 40 40" fill="none"><circle cx="20" cy="20" r="17" fill="#f97316"/><path d="M20 9 L23 16 L30 16 L24 21 L26 28 L20 24 L14 28 L16 21 L10 16 L17 16 Z" fill="#fff"/></svg>`,
+};
+
+// ── Card data ────────────────────────────────────────────────────
+const CARDS = [
+  {
+    team:'zweckel', ext:'https://kevin1337pro.github.io/weltkarte-vereine/',
+    img:'https://images.unsplash.com/photo-1517466787929-bc90951d0974?w=600&q=80',
+    tag:'Heimverein', ext_tag:'↗ Extern',
+    kicker:'SV Zweckel · gegr. 1929',
+    headline:'Die Weltkarte der Vereine',
+    blurb:'Entdecke die interaktive Vereinskarte — alle Teams aus der Region und der Welt auf einer Map.',
+    foot_l:'Zur Vereinsseite', foot_r:'Öffnen'
+  },
+  {
+    team:'westfalen',
+    img:'https://images.unsplash.com/photo-1551958219-acbc608c6377?w=600&q=80',
+    tag:'live', tag_text:'Live · 73\'',
+    kicker:'Westfalenliga · Staffel 2',
+    headline:'Zweckel dreht das Spiel gegen Ahlen',
+    blurb:'Doppelpack von Yilmaz nach Hereingabe von Hartmann — die Heimelf liegt in der Schlussphase erstmals vorne.',
+    foot_l:'Liveticker', foot_r:'Verfolgen',
+    news:{
+      meta:'Westfalenliga · Staffel 2', src:'Liveticker',
+      h:'Zweckel dreht das Spiel gegen RW Ahlen II',
+      kicker:'Liveticker · 73. Minute',
+      body:`<p><strong>Gladbeck-Zweckel.</strong> Was für eine zweite Halbzeit am Heimathstadion: Der SV Zweckel liegt nach 0:1 zur Pause plötzlich mit 2:1 vorne — und die rund 480 Zuschauer im Stadion sind aus dem Häuschen.</p><p>Den Ausgleich erzielte <strong>Mehmet Yilmaz</strong> in der 58. Minute per Kopf nach einer Hereingabe von Hartmann. Nur sieben Minuten später schnürte er den Doppelpack nach einem Konter über die linke Seite.</p><div class="quote">„Wir wussten, dass wir nur über die Mentalität ins Spiel kommen. Jetzt müssen wir es verteidigen." — Trainer Marcel Beyer</div><p>Ahlen drückt seit der 70. Minute auf den Ausgleich — Schiedsrichter Klaesener zeigte bereits zwei Gelbe Karten gegen die Heimelf. Mit einem Sieg würde Zweckel auf Platz 6 klettern.</p>`,
+      stats:[['Ballbesitz','46%'],['Torschüsse','8'],['Ecken','5']]
+    }
+  },
+  {
+    team:'landesliga',
+    img:'https://images.unsplash.com/photo-1431324155629-1a6deb1dec8d?w=600&q=80',
+    tag:'Tabelle',
+    kicker:'Landesliga · Staffel 3',
+    headline:'Spitzenkampf an der Emscher',
+    blurb:'SuS Stadtlohn führt die Tabelle an, doch VfB Hüls und DJK Bottrop bleiben hartnäckig dran.',
+    foot_l:'Komplette Tabelle', foot_r:'Mehr',
+    news:{
+      meta:'Landesliga · Staffel 3', src:'Tabellenbericht',
+      h:'Drei Vereine, ein Aufstiegsplatz',
+      kicker:'Saison 25/26 · 30 von 34 Spieltagen',
+      body:`<p>Vier Spieltage vor Schluss bleibt die Landesliga-Staffel 3 das vielleicht spannendste Rennen Westfalens. <strong>SuS Stadtlohn</strong> führt mit 61 Punkten, doch der <strong>VfB Hüls</strong> liegt nur drei Zähler dahinter — und hat das direkte Duell am 33. Spieltag noch vor der Brust.</p><p>Auch die <strong>DJK Adler Bottrop</strong> mischt nach einer beeindruckenden Rückrunde wieder ganz oben mit. Sieben Siege in Folge haben die Bottroper auf Platz 3 gebracht.</p><div class="stat-row"><span>Tordifferenz Stadtlohn</span><span>+38</span></div><div class="stat-row"><span>Tordifferenz Hüls</span><span>+31</span></div><div class="stat-row"><span>Tordifferenz Bottrop</span><span>+22</span></div><p style="margin-top:10px">Der Aufsteiger erhält das Recht, in die Westfalenliga aufzurücken — mit allen Konsequenzen für Etat und Lizenzierung.</p>`
+    }
+  },
+  {
+    team:'gladbeck',
+    img:'https://images.unsplash.com/photo-1518604666860-9ed391f76460?w=600&q=80',
+    tag:'Regional',
+    kicker:'Gladbeck · Stadtsport',
+    headline:'Neuer Kunstrasen in Brauck eröffnet',
+    blurb:'Bürgermeisterin Weghoff übergibt das sanierte Sportzentrum — drei Vereine teilen sich künftig den Platz an der Schultenstraße.',
+    foot_l:'Lokal · vor 2 Std', foot_r:'Lesen',
+    news:{
+      meta:'Gladbeck · Lokales', src:'Stadtreporter',
+      h:'Brauck hat einen neuen Kunstrasen',
+      kicker:'Sportanlage Schultenstraße',
+      body:`<p><strong>Gladbeck-Brauck.</strong> Nach 14 Monaten Bauzeit und 1,8 Mio. Euro Investitionssumme ist der neue Kunstrasenplatz an der Schultenstraße offiziell eröffnet. Bürgermeisterin <strong>Bettina Weghoff</strong> sprach beim Festakt von einem „Meilenstein für den Breitensport in Gladbeck."</p><p>Drei Vereine — die DJK Brauck, der TuS Zweckel-Brauck und die Schul­spielgemeinschaft Erich-Kästner — teilen sich den neuen Platz. Erstmals können auch die Mädchenmannschaften ihre Heimspiele auf dem modernen Belag austragen.</p><div class="quote">„Wir warten seit zehn Jahren auf diesen Tag. Jetzt können unsere Kinder bei jedem Wetter trainieren." — Vorsitzender Klaus Pfingsten, DJK Brauck</div><p>Im Anschluss spielten die F-Junioren der DJK gegen den TuS — Endstand 4:4. Die Eröffnung wurde mit einem Bürgerfest und Würstchen für alle gefeiert.</p>`
+    }
+  },
+  {
+    team:'bvb',
+    img:'https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=600&q=80',
+    tag:'live', tag_text:'Live · 81\'',
+    kicker:'Bundesliga · Bayern (A)',
+    headline:'Adeyemi schießt BVB zum Sieg',
+    blurb:'In der Allianz Arena trifft Karim Adeyemi in der 78. Minute zum 3:2 — der BVB hat den Bayern-Bann gebrochen.',
+    foot_l:'Allianz Arena', foot_r:'Spielbericht',
+    news:{
+      meta:'Bundesliga · 32. Spieltag', src:'Liveticker · München',
+      h:'Adeyemi knackt die Bayern',
+      kicker:'Allianz Arena · 81. Minute',
+      body:`<p><strong>München.</strong> Was für ein Spiel in der Allianz Arena: <strong>Karim Adeyemi</strong> hat den BVB in der 78. Minute zur 3:2-Führung geschossen — und die Schwarz-Gelben sind kurz davor, das Meisterrennen ein letztes Mal aufzumischen.</p><p>Nach einem 0:2-Rückstand zur Pause durch Tore von Kane und Musiala drehten zunächst Guirassy (52.) und Brandt (66.) die Partie. Bayern glich durch Sané (74.) aus, doch Adeyemi schlug nur vier Minuten später eiskalt zu.</p><div class="quote">„Wenn wir das hier nach Hause bringen, ist im Titelrennen alles wieder offen." — Niko Kovač, BVB-Trainer</div><div class="stat-row"><span>Ballbesitz</span><span>BVB 38%</span></div><div class="stat-row"><span>Schüsse aufs Tor</span><span>BVB 7 / FCB 9</span></div><div class="stat-row"><span>Expected Goals</span><span>BVB 2.4 / FCB 2.7</span></div>`
+    }
+  },
+  {
+    team:'schalke',
+    img:'https://images.unsplash.com/photo-1522778119026-d647f0596c20?w=600&q=80',
+    tag:'2. Bundesliga',
+    kicker:'Aufstiegsrennen',
+    headline:'Königsblau zurück auf Platz 3',
+    blurb:'Karaman trifft doppelt gegen Magdeburg — Schalke darf nach acht Spielen ohne Niederlage wieder auf die Rückkehr ins Oberhaus hoffen.',
+    foot_l:'Veltins-Arena', foot_r:'Analyse',
+    news:{
+      meta:'2. Bundesliga · 31. Spieltag', src:'Spielanalyse',
+      h:'Karaman schießt Schalke nach oben',
+      kicker:'Veltins-Arena · Endstand 3:1',
+      body:`<p><strong>Gelsenkirchen.</strong> Der FC Schalke 04 ist zurück im Aufstiegsrennen: Mit einem 3:1 gegen den 1. FC Magdeburg klettert Königsblau auf Platz 3 — und damit auf den Relegationsrang.</p><p><strong>Kenan Karaman</strong> war einmal mehr der Mann des Spiels: Doppelpack in der 23. und 67. Minute, dazu eine Vorlage zum 3:1 von Bülter. Acht Spiele in Serie ist Schalke nun ungeschlagen.</p><div class="quote">„Die Rückkehr in die Bundesliga ist machbar. Aber wir müssen Spiel für Spiel denken." — Kees van Wonderen</div><p>Auf Platz 1 steht der HSV (62), gefolgt von Hannover 96 (58) und Schalke (54). Vier Spieltage sind noch zu absolvieren. Direkt aufsteigen können nur die Top 2 — Platz 3 spielt Relegation.</p><div class="stat-row"><span>Punkte aus letzten 8 Spielen</span><span>20</span></div><div class="stat-row"><span>Heimspiele in Folge gewonnen</span><span>5</span></div>`
+    }
+  },
+  {
+    team:'bochum',
+    img:'https://images.unsplash.com/photo-1486286701208-1d58e9338013?w=600&q=80',
+    tag:'Bundesliga · Heute',
+    kicker:'VfL Bochum 1848',
+    headline:'Klassenerhalt in eigener Hand',
+    blurb:'Mit einem Sieg im Revierderby gegen Schalke wäre der VfL durch — Trainer Hecking setzt auf Stamm­elf und Heimstärke.',
+    foot_l:'Vonovia Ruhrstadion', foot_r:'Vorschau',
+    news:{
+      meta:'Bundesliga · 33. Spieltag', src:'Spielvorschau',
+      h:'Bochum kann gegen Schalke alles klar machen',
+      kicker:'Samstag · 18:30 Uhr · Ruhrstadion',
+      body:`<p><strong>Bochum.</strong> Der VfL Bochum hat es selbst in der Hand: Mit einem Sieg gegen den (wieder aufgestiegenen) FC Schalke 04 würde der Klassenerhalt rechnerisch perfekt sein. Aber das ist leichter gesagt als getan.</p><p>Trainer <strong>Dieter Hecking</strong> setzt auf seine Stammelf — Riemann im Tor, hinten die bewährte Viererkette mit Ordets und Bernardo. Im Mittelfeld kehrt Anthony Losilla nach Sperre zurück.</p><div class="quote">„Es gibt keine größere Bühne als ein Revierderby. Und keine bessere Bühne, um den Klassenerhalt zu fixieren." — Dieter Hecking</div><p>Schalke reist mit Rückenwind an, hat aber nichts mehr zu verlieren. Erwartet wird ein ausverkauftes Ruhrstadion — die letzten Karten gingen Mittwochabend weg.</p><div class="stat-row"><span>Heimspiele Saison</span><span>9 Siege / 4 Remis</span></div><div class="stat-row"><span>Bilanz vs. Schalke (Liga)</span><span>14:11:13</span></div>`
+    }
+  },
+  {
+    team:'bundesliga',
+    img:'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?w=600&q=80',
+    tag:'Bundesliga',
+    kicker:'Tabelle · 32. Spieltag',
+    headline:'Meisterrennen offen wie nie',
+    blurb:'Leverkusen mit zwei Punkten Vorsprung auf Bayern, Dortmund mit Aufholjagd auf Platz 3 — alles entscheidet sich am letzten Spieltag.',
+    foot_l:'Saison 25/26', foot_r:'Volle Tabelle',
+    news:{
+      meta:'Bundesliga · Tabelle', src:'Saisonbericht',
+      h:'Drei Teams, zwei Spieltage, eine Schale',
+      kicker:'Stand 32. Spieltag',
+      body:`<p>Was für eine Saison: Bayer Leverkusen führt die Tabelle mit 71 Punkten an, der FC Bayern hat 69 — und Borussia Dortmund mischt mit 66 Punkten plötzlich wieder an der Spitze mit.</p><div class="stat-row"><span>1. Bayer Leverkusen</span><span>71</span></div><div class="stat-row"><span>2. FC Bayern München</span><span>69</span></div><div class="stat-row"><span>3. Borussia Dortmund</span><span>66</span></div><div class="stat-row"><span>4. RB Leipzig</span><span>62</span></div><p style="margin-top:10px">Am 33. Spieltag empfängt Leverkusen den BVB im direkten Duell — alles ist möglich. Bayern muss nach Hoffenheim, Dortmund hat ein Restprogramm zwischen Heim­spielstärke und Reise nach Stuttgart.</p><div class="quote">„Wir spielen den schönsten Bundesliga-Frühling seit Jahren." — Florian Wirtz, Bayer Leverkusen</div>`
+    }
+  },
+  {
+    team:'spielplan',
+    img:'https://images.unsplash.com/photo-1431324155629-1a6deb1dec8d?w=600&q=80',
+    tag:'Spielplan',
+    kicker:'Wochenende · 9./10. Mai',
+    headline:'15 Spiele am Samstag',
+    blurb:'Von der Westfalenliga bis zur Bundesliga — alle Anstoßzeiten der Region in einer Übersicht.',
+    foot_l:'Alle Anstoß­zeiten', foot_r:'Übersicht',
+    news:{
+      meta:'Spielplan · Mai-Wochenende', src:'Anstoßzeiten',
+      h:'Das gibt es am Wochenende live',
+      kicker:'Samstag, 9. Mai 2026',
+      body:`<div class="stat-row"><span>SV Zweckel — TuS Haltern</span><span>15:30</span></div><div class="stat-row"><span>VfB Hüls — SuS Stadtlohn</span><span>15:30</span></div><div class="stat-row"><span>Adler Bottrop — DJK Brauck</span><span>15:30</span></div><div class="stat-row"><span>VfL Bochum — FC Schalke</span><span>18:30</span></div><div class="stat-row"><span>BVB — VfB Stuttgart</span><span>20:30</span></div><p style="margin-top:12px"><strong>Sonntag, 10. Mai</strong></p><div class="stat-row"><span>Bayer 04 — RB Leipzig</span><span>15:30</span></div><div class="stat-row"><span>FC Bayern — TSG Hoffenheim</span><span>17:30</span></div><div class="stat-row"><span>Eintracht Frankfurt — VfL Wolfsburg</span><span>19:30</span></div><p style="margin-top:10px">Liveticker zu allen Spielen findet ihr auf Worldfootball.com — pünktlich zum Anpfiff.</p>`
+    }
+  },
+  {
+    team:'transfer',
+    img:'https://images.unsplash.com/photo-1543326727-cf6c39e8f84c?w=600&q=80',
+    tag:'Transfermarkt',
+    kicker:'Gerücht · Quelle: kicker',
+    headline:'Schalke an Stürmer aus Liga 2 dran',
+    blurb:'Insider berichten: S04 verhandelt mit einem 22-jährigen Mittelstürmer aus Hannover — Ablöse soll bei 3,5 Mio. liegen.',
+    foot_l:'Sommer-Fenster 2026', foot_r:'Mehr Gerüchte',
+    news:{
+      meta:'Transfermarkt · Sommer 2026', src:'kicker · exclusive',
+      h:'Schalke heiß auf Hannovers Stürmer',
+      kicker:'Wechselgerücht · 22-Jähriger',
+      body:`<p>Der FC Schalke 04 ist nach Informationen des kicker an einem 22-jährigen Mittelstürmer von Hannover 96 dran. Der Spieler hat in dieser Saison <strong>14 Tore und 6 Vorlagen</strong> in 28 Spielen gesammelt.</p><p>Die Königsblauen wollen für den Fall des Aufstiegs — und auch ohne — die Offensive verstärken. Die geforderte Ablöse soll bei 3,5 Mio. Euro liegen, der Vertrag in Hannover läuft noch zwei Jahre.</p><div class="quote">„Wir beobachten ihn seit Monaten. Aber konkrete Verhandlungen gibt es nicht." — Sportdirektor Marc Wilmots, S04</div><p>Konkurrenz droht aus Bremen, wo Werder ebenfalls einen jungen Stürmer sucht, sowie aus Belgien (KAA Gent).</p><div class="stat-row"><span>Tore Saison</span><span>14</span></div><div class="stat-row"><span>Marktwert</span><span>3,2 Mio. €</span></div><div class="stat-row"><span>Vertrag</span><span>bis 2028</span></div>`
+    }
+  },
+  {
+    team:'derby',
+    img:'https://images.unsplash.com/photo-1577223625816-7546f13df25d?w=600&q=80',
+    tag:'Special',
+    kicker:'Revier · Countdown',
+    headline:'Noch 4 Tage bis zum Derby',
+    blurb:'VfL Bochum gegen Schalke 04 — die emotionalste Begegnung der Saison. Stimmen, Statistiken und Anstoß­wetten.',
+    foot_l:'Derby-Hub', foot_r:'Zum Special',
+    news:{
+      meta:'Revierderby · 33. Spieltag', src:'Worldfootball Special',
+      h:'VfL gegen S04 — was du wissen musst',
+      kicker:'Samstag · 18:30 Uhr · Bochum',
+      body:`<p>Es ist das Spiel des Jahres im Ruhrgebiet: <strong>VfL Bochum</strong> gegen <strong>Schalke 04</strong>, beide Klubs nach turbulenten Saisons mit klaren Zielen — Bochum will den Klassenerhalt fixieren, Schalke (wieder Erstligist) eine starke Saison krönen.</p><div class="stat-row"><span>Letztes Bundesliga-Duell</span><span>3:0 für VfL</span></div><div class="stat-row"><span>Heimsiege Bochum vs. Schalke</span><span>14</span></div><div class="stat-row"><span>Auswärtssiege Schalke in Bochum</span><span>13</span></div><div class="stat-row"><span>Unentschieden</span><span>11</span></div><div class="quote">„Es geht nicht nur um drei Punkte. Es geht um Stolz, Identität und Heimat." — Anton Pfeiffer, VfL-Fan-Vorsitzender</div><p style="margin-top:10px">Anstoß ist Samstag um 18:30 Uhr. Live im Free-TV (ZDF) und auf Worldfootball.com im Liveticker.</p>`
+    }
+  },
+  {
+    team:'torjaeger',
+    img:'https://images.unsplash.com/photo-1606925797300-0b35e9d1794e?w=600&q=80',
+    tag:'Torjäger­liste',
+    kicker:'Westfalenliga 25/26',
+    headline:'Yilmaz fast bei 30',
+    blurb:'Der Stürmer des SV Zweckel führt die Torjägerliste der Westfalenliga souverän an — vier Tore Vorsprung.',
+    foot_l:'Saisonstatistik', foot_r:'Komplette Liste',
+    news:{
+      meta:'Westfalenliga · Topscorer', src:'Saisonstatistik',
+      h:'Yilmaz auf Rekordkurs',
+      kicker:'30 Tore in einer Saison?',
+      body:`<p><strong>Mehmet Yilmaz</strong> vom SV Zweckel hat aktuell 28 Saisontore auf dem Konto — vier Spieltage vor Schluss. Der Vereinsrekord von 32 Toren (Klaus Hertel, Saison 1989/90) ist greifbar nahe.</p><div class="stat-row"><span>1. M. Yilmaz · Zweckel</span><span>28</span></div><div class="stat-row"><span>2. D. Krause · Ahlen II</span><span>24</span></div><div class="stat-row"><span>3. L. Kowalski · TuS</span><span>21</span></div><div class="stat-row"><span>4. N. Berisha · PSV</span><span>18</span></div><div class="quote">„Wenn er gesund bleibt, knackt er die 30. Vielleicht sogar 32." — Vereinslegende Klaus Hertel</div><p>Yilmaz, 26, kam vor zwei Jahren ablösefrei vom TuS Bövinghausen und ist mittlerweile Kapitän der Mannschaft. Mehrere Drittligisten sollen Interesse signalisiert haben.</p><div class="stat-row"><span>Tore in 32 Spielen</span><span>28</span></div><div class="stat-row"><span>Tore pro Spiel</span><span>0.875</span></div><div class="stat-row"><span>Marktwert</span><span>180.000 €</span></div>`
+    }
+  },
+];
+
+// ── Build cards ──────────────────────────────────────────────────
+function buildFx() {
+  return `<div class="fx fx-base"></div><div class="fx fx-irid" data-irid></div>
+    <div class="fx fx-shimmer" data-shimmer></div><div class="fx fx-spec" data-spec></div>
+    <div class="fx fx-noise" style="background-image:url(${NOISE_URL});background-size:200px;background-repeat:repeat"></div>
+    <div class="fx fx-vignette"></div><div class="fx fx-edge"></div>`;
+}
+
+function buildFront(c, idx) {
+  const total = CARDS.length;
+  const num = String(idx+1).padStart(2,'0') + ' / ' + String(total).padStart(2,'0');
+  let tagHtml;
+  if (c.team === 'zweckel') {
+    tagHtml = `<span class="card-img-tag ext">${c.ext_tag}</span>`;
+  } else if (c.tag === 'live') {
+    tagHtml = `<span class="card-img-tag live">${c.tag_text}</span>`;
+  } else {
+    tagHtml = `<span class="card-img-tag">${c.tag}</span>`;
+  }
+  return `<div class="card-body">
+    <div class="card-img">
+      <img src="${c.img}" alt="" loading="lazy" referrerpolicy="no-referrer">
+      ${tagHtml}
+      <span class="card-num">${num}</span>
+      <div class="card-crest">${CRESTS[c.team] || ''}</div>
+    </div>
+    <div class="card-content">
+      <div class="card-kicker">${c.kicker}</div>
+      <div class="card-headline">${c.headline}</div>
+      <div class="card-blurb">${c.blurb}</div>
+      <div class="card-bot">
+        <span>${c.foot_l}</span>
+        <span class="arr">${c.foot_r} <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M5 3 L9 7 L5 11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+      </div>
+    </div>
+  </div>`;
+}
+
+function buildBack(c) {
+  if (!c.news) return '';
+  const n = c.news;
+  return `<div class="back-body">
+    <div class="back-meta"><span>${n.meta}</span><span class="dot"></span><span class="src">${n.src}</span></div>
+    <div class="back-kicker">${n.kicker}</div>
+    <div class="back-h">${n.h}</div>
+    <div class="back-news">${n.body}</div>
+    <div class="back-foot">
+      <span class="flip-back" data-flip-back>← Zurück</span>
+      <span>Vollständig lesen ↗</span>
+    </div>
+  </div>`;
+}
+
+const grid = document.getElementById('grid');
+CARDS.forEach((c, idx) => {
+  const el = document.createElement(c.team === 'zweckel' ? 'a' : 'div');
+  el.className = 'card';
+  el.dataset.team = c.team;
+  if (c.team === 'zweckel') {
+    el.href = c.ext;
+    el.target = '_blank';
+    el.rel = 'noopener';
+  }
+  el.innerHTML = `<div class="card-tilt"><div class="card-flip">
+    <div class="face front">${buildFx()}${buildFront(c, idx)}</div>
+    ${c.news ? `<div class="face back">${buildFx()}${buildBack(c)}</div>` : ''}
+  </div></div>`;
+  grid.appendChild(el);
+});
+
+// ── Iridescent tilt + click flip ─────────────────────────────────
+let tipShown = false;
+const tip = document.getElementById('tip');
+function showTip() {
+  if (tipShown) return; tipShown = true;
+  tip.classList.add('show');
+  setTimeout(()=>tip.classList.remove('show'), 3200);
+}
+
+document.querySelectorAll('.card').forEach(card => {
+  const tilt = card.querySelector('.card-tilt');
+  const lIrid = card.querySelectorAll('[data-irid]');
+  const lShim = card.querySelectorAll('[data-shimmer]');
+  const lSpec = card.querySelectorAll('[data-spec]');
+  let nx=0, ny=0, hov=false, raf=null;
+
+  function update(){
+    raf=null;
+    const rx = -ny * 8, ry = nx * 8;
+    tilt.style.transform = `rotateX(${rx}deg) rotateY(${ry}deg)`;
+    const bh = 90 + nx*120 + ny*60;
+    const ang = 135 + ny*45;
+    const grad = `linear-gradient(${ang}deg,
+      hsl(${bh}deg,88%,58%),hsl(${bh+55}deg,94%,62%),hsl(${bh+115}deg,94%,62%),
+      hsl(${bh+175}deg,88%,60%),hsl(${bh+235}deg,88%,60%),
+      hsl(${bh+295}deg,94%,62%),hsl(${bh+355}deg,88%,58%))`;
+    lIrid.forEach(el=>el.style.background=grad);
+    const sx = 50+nx*28, sy = 50+ny*28;
+    const shim = `conic-gradient(from ${bh*.5}deg at ${sx}% ${sy}%,
+      #ff6b6b44,#ffd93d44,#6bcb7744,#4d96ff44,#c77dff44,#ff6b6b44)`;
+    lShim.forEach(el=>el.style.background=shim);
+    const spx = 50+nx*38, spy = 50+ny*38;
+    const spec = `radial-gradient(circle at ${spx}% ${spy}%,
+      rgba(255,255,255,.35) 0%,rgba(255,255,255,.06) 28%,transparent 55%)`;
+    lSpec.forEach(el=>el.style.background=spec);
+    if (hov) raf = requestAnimationFrame(update);
+  }
+  card.addEventListener('mouseenter', () => {
+    hov=true; if(!raf) raf=requestAnimationFrame(update);
+    if (card.dataset.team !== 'zweckel') showTip();
+  });
+  card.addEventListener('mouseleave', () => {
+    hov=false; nx=0; ny=0;
+    tilt.style.transition='transform .5s cubic-bezier(.23,1,.32,1)';
+    tilt.style.transform='rotateX(0) rotateY(0)';
+    setTimeout(()=>{tilt.style.transition='transform .12s ease-out';},520);
+  });
+  card.addEventListener('mousemove', e => {
+    const r = card.getBoundingClientRect();
+    nx = Math.max(-1, Math.min(1, (e.clientX-r.left-r.width/2)/(r.width/2)));
+    ny = Math.max(-1, Math.min(1, (e.clientY-r.top-r.height/2)/(r.height/2)));
+    if(!raf) raf=requestAnimationFrame(update);
+  });
+
+  // Click → flip (except SV Zweckel which links externally)
+  card.addEventListener('click', e => {
+    if (card.dataset.team === 'zweckel') return; // links external
+    // If clicked the back-foot "← Zurück" pill, just flip back
+    e.preventDefault();
+    card.classList.toggle('flipped');
+    // Reset tilt while flipping
+    nx=0; ny=0;
+    tilt.style.transition='transform .5s cubic-bezier(.23,1,.32,1)';
+    tilt.style.transform='rotateX(0) rotateY(0)';
+    setTimeout(()=>{tilt.style.transition='transform .12s ease-out';},520);
+  });
+});
+</script>
+</body>
+</html>
