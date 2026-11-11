@@ -14,10 +14,16 @@ const WEATHER_INTERVAL_MS = 15 * 60 * 1000;       // Wetter alle 15 Min
 const FETCH_TIMEOUT_MS = 12_000;
 
 const GLADBECK_RSS = 'http://selfdb.gkd-re.de/selfdbinter140/feed140.rss?db=404&form=list&orderby=fieldDatum&desc=true&searchfieldBeginndatum.max=heute&searchfieldAblaufdatum.min=heute&feedname=Aktuelle%20News%20aus%20Gladbeck';
-const GELSENKIRCHEN_RSS = 'https://www.gelsenkirchen.de/de/_meta/aktuelles/artikel/newsfeed/';
+const GELSENKIRCHEN_RSS = 'https://www.gelsenkirchen.de/de/_funktionsnavigation/presse/pressemeldungen/newsfeed/bereich/4-presse';
 const FLVW_RSS = 'https://flvw.de/feed/rss/de.rss';
 const FUSSBALL_DE_URL = 'https://www.fussball.de/';
 const FUSSBALL_DE_ALL_NEWS = 'https://www.fussball.de/news/-/include/all_news';
+const NEWS_SOURCES = [
+  { key: 'gladbeck', name: 'Stadt Gladbeck', url: 'https://www.gladbeck.de/', feedUrl: GLADBECK_RSS, limit: 6 },
+  { key: 'gelsenkirchen', name: 'Stadt Gelsenkirchen', url: 'https://www.gelsenkirchen.de/', feedUrl: GELSENKIRCHEN_RSS, limit: 6 },
+  { key: 'westfalen', name: 'FLVW · Westfalen', url: 'https://flvw.de/', feedUrl: FLVW_RSS, limit: 8, regional: true },
+  { key: 'fussball', name: 'fussball.de', url: FUSSBALL_DE_URL, limit: 10 },
+];
 
 // Keywords für "Zweckel und Umgebung" — Region Gladbeck + Ruhrgebiet + Westfalen
 const REGION_KEYWORDS = [
@@ -35,14 +41,21 @@ const WEATHER_LON = 6.9852;
 const parser = new Parser({
   timeout: FETCH_TIMEOUT_MS,
   headers: { 'User-Agent': 'WorldfootballNewsBot/1.0 (+local)' },
+  customFields: {
+    item: [
+      ['media:thumbnail', 'media:thumbnail', { keepArray: true }],
+      ['media:content', 'media:content', { keepArray: true }],
+    ],
+  },
 });
 
 // ── Cache ──────────────────────────────────────────────────────────
 const cache = {
-  news: { items: [], updatedAt: null, errors: [] },
+  news: { items: [], updatedAt: null, errors: [], sources: [] },
   weather: { current: null, updatedAt: null, error: null },
 };
 const pendingRefreshes = { news: null, weather: null };
+const lastSuccessfulNews = new Map();
 
 function getFreshCache(key, maxAge, refresh) {
   if (pendingRefreshes[key]) return pendingRefreshes[key];
@@ -65,7 +78,14 @@ const getWeather = () => getFreshCache('weather', WEATHER_INTERVAL_MS, refreshWe
 
 // ── Helper: HTML strip ────────────────────────────────────────────
 function stripHtml(html = '') {
-  return cheerio.load(`<div>${html}</div>`)('div').text().replace(/\s+/g, ' ').trim();
+  // Manche Feeds kürzen mitten in einem Tag oder Entity und hängen "..." an.
+  // Nur diesen markierten Rest entfernen; der fehlende Text wird nicht ergänzt.
+  const cleaned = String(html)
+    .replace(/<(?:\/?[a-z][^<>]*)?(?:\.{3}|…)\s*$/i, '…')
+    .replace(/&(?:#(?:x[0-9a-f]*|\d*)|[a-z][a-z0-9]*)(?:\.{3}|…)\s*$/i, '…');
+  const $ = cheerio.load(cleaned);
+  $('script, style, noscript').remove();
+  return $.root().text().replace(/\s+/g, ' ').trim();
 }
 
 function trim(s = '', n = 220) {
@@ -73,83 +93,111 @@ function trim(s = '', n = 220) {
   return s.length > n ? s.slice(0, n - 1).trimEnd() + '…' : s;
 }
 
-async function fetchWithTimeout(url, opts = {}) {
+function httpUrl(value, base, removeHash = false) {
+  if (typeof value !== 'string' || !value.trim() || /[\u0000-\u001f\u007f]/.test(value)) return null;
+  try {
+    const url = new URL(value.trim(), base);
+    if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password) return null;
+    if (removeHash) url.hash = '';
+    return url.href;
+  } catch {
+    return null;
+  }
+}
+
+function publicationDate(...values) {
+  for (const value of values) {
+    if (typeof value !== 'string' || !value.trim()) continue;
+    const timestamp = Date.parse(value);
+    if (Number.isFinite(timestamp)) return new Date(timestamp).toISOString();
+  }
+  return null;
+}
+
+function rssImage(item, base) {
+  const candidates = [];
+  for (const field of ['media:thumbnail', 'media:content']) {
+    const entries = item[field] ? [].concat(item[field]) : [];
+    for (const entry of entries) {
+      const media = entry?.$ || entry;
+      if (!media || typeof media !== 'object') continue;
+      const isImage = field === 'media:thumbnail' || media.medium === 'image' ||
+        String(media.type || '').startsWith('image/') ||
+        (!media.medium && !media.type && /\.(avif|gif|jpe?g|png|webp)(?:[?#]|$)/i.test(media.url || ''));
+      if (isImage) candidates.push(media.url);
+    }
+  }
+  const enclosure = item.enclosure;
+  if (enclosure && (String(enclosure.type || '').startsWith('image/') ||
+      (!enclosure.type && /\.(avif|gif|jpe?g|png|webp)(?:[?#]|$)/i.test(enclosure.url || '')))) {
+    candidates.push(enclosure.url);
+  }
+  for (const html of [item['content:encoded'], item.content, item.summary]) {
+    if (!html) continue;
+    const $ = cheerio.load(String(html));
+    $('img').each((_, image) => {
+      candidates.push($(image).attr('src'), $(image).attr('data-src'), $(image).attr('data-original'));
+    });
+  }
+  return candidates.map(value => httpUrl(value, base)).find(Boolean) || null;
+}
+
+function normalizeArticles(items, source) {
+  const unique = new Map();
+  for (const item of items) {
+    const url = httpUrl(item.url, source.url, true);
+    const title = stripHtml(item.title || '');
+    if (!url || !title || unique.has(url)) continue;
+    unique.set(url, {
+      ...item,
+      source: source.name,
+      sourceKey: source.key,
+      title,
+      url,
+      pubDate: publicationDate(item.pubDate),
+      summary: trim(stripHtml(item.summary || ''), 260),
+      image: httpUrl(item.image, url),
+      regional: !!item.regional,
+    });
+  }
+  return [...unique.values()].slice(0, source.limit);
+}
+
+async function fetchWithTimeout(url, readResponse) {
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), FETCH_TIMEOUT_MS);
   try {
-    return await fetch(url, {
-      ...opts,
+    const response = await fetch(url, {
       signal: ctrl.signal,
       headers: {
         'User-Agent': 'Mozilla/5.0 (compatible; WorldfootballNewsBot/1.0)',
         'Accept-Language': 'de-DE,de;q=0.9',
-        ...(opts.headers || {}),
       },
     });
+    // Timeout umfasst auch das Lesen des Antwortkörpers.
+    return await readResponse(response);
   } finally {
     clearTimeout(t);
   }
 }
 
-// ── Scraper: Gladbeck RSS ─────────────────────────────────────────
-async function fetchGladbeck() {
-  const feed = await parser.parseURL(GLADBECK_RSS);
-  return (feed.items || []).slice(0, 6).map((it) => {
-    const desc = stripHtml(it.contentSnippet || it.content || '');
+// ── RSS/Atom: Stadtportale und FLVW ────────────────────────────────
+async function fetchRss(source) {
+  const feed = await parser.parseURL(source.feedUrl);
+  const base = httpUrl(feed.link, source.feedUrl) || source.url;
+  const items = (feed.items || []).map((it) => {
+    const url = httpUrl(it.link, base, true);
     return {
-      source: 'Stadt Gladbeck',
-      sourceKey: 'gladbeck',
-      title: (it.title || '').trim(),
-      url: it.link,
-      pubDate: it.pubDate || it.isoDate || null,
-      summary: trim(desc, 260),
-      bodyHtml: it.content || it['content:encoded'] || '',
+      title: it.title || '',
+      url,
+      pubDate: publicationDate(it.pubDate, it.isoDate, it.updated),
+      summary: it.contentSnippet || it['content:encodedSnippet'] || it.summary || it.content || it['content:encoded'] || '',
+      bodyHtml: it['content:encoded'] || it.content || it.summary || '',
+      image: rssImage(it, url || base),
+      regional: !!source.regional,
     };
   });
-}
-
-// ── Scraper: Gelsenkirchen Atom ───────────────────────────────────
-async function fetchGelsenkirchen() {
-  const feed = await parser.parseURL(GELSENKIRCHEN_RSS);
-  return (feed.items || []).slice(0, 6).map((it) => {
-    const desc = stripHtml(it.contentSnippet || it.content || it.summary || '');
-    return {
-      source: 'Stadt Gelsenkirchen',
-      sourceKey: 'gelsenkirchen',
-      title: (it.title || '').trim(),
-      url: it.link,
-      pubDate: it.pubDate || it.isoDate || it.updated || null,
-      summary: trim(desc, 260),
-      bodyHtml: it.content || it['content:encoded'] || it.summary || '',
-    };
-  });
-}
-
-// ── Scraper: FLVW Westfalen RSS (Verband Westfalen-Liga + Region) ─
-async function fetchFlvw() {
-  const feed = await parser.parseURL(FLVW_RSS);
-  return (feed.items || []).slice(0, 8).map((it) => {
-    const desc = stripHtml(it.contentSnippet || it.content || '');
-    // Bild aus media:thumbnail oder content extrahieren
-    let img = null;
-    const mediaThumb = it['media:thumbnail']?.$ || it['media:thumbnail'];
-    if (mediaThumb?.url) img = mediaThumb.url;
-    if (!img && it.content) {
-      const m = it.content.match(/<img[^>]+src="([^"]+)"/);
-      if (m) img = m[1];
-    }
-    return {
-      source: 'FLVW · Westfalen',
-      sourceKey: 'westfalen',
-      title: (it.title || '').trim(),
-      url: it.link,
-      pubDate: it.pubDate || it.isoDate || null,
-      summary: trim(desc, 260),
-      bodyHtml: it['content:encoded'] || it.content || '',
-      image: img,
-      regional: true,
-    };
-  });
+  return { items };
 }
 
 // ── Scraper: fussball.de — both Homepage + all_news ──────────────
@@ -158,9 +206,10 @@ function isRegional(text = '') {
 }
 
 async function scrapeFussballPage(url) {
-  const res = await fetchWithTimeout(url);
-  if (!res.ok) throw new Error(`fussball.de ${url} → status ${res.status}`);
-  const html = await res.text();
+  const html = await fetchWithTimeout(url, async (res) => {
+    if (!res.ok) throw new Error(`fussball.de ${url} → status ${res.status}`);
+    return res.text();
+  });
   const $ = cheerio.load(html);
   const items = [];
 
@@ -168,7 +217,8 @@ async function scrapeFussballPage(url) {
     const $a = $(a);
     const href = $a.attr('href');
     if (!href) return;
-    const fullUrl = href.startsWith('http') ? href : new URL(href, FUSSBALL_DE_URL).toString();
+    const fullUrl = httpUrl(href, url, true);
+    if (!fullUrl) return;
     const title =
       $a.attr('title')?.trim() ||
       $a.find('h2,h3,h4,.title,.headline').first().text().trim() ||
@@ -177,15 +227,14 @@ async function scrapeFussballPage(url) {
     if (/^(mehr anzeigen|alle news|weiterlesen)$/i.test(title)) return;
     if (items.some((x) => x.url === fullUrl)) return;
     const summary = $a.find('p,.teaser,.summary').first().text().replace(/\s+/g, ' ').trim();
-    const img = $a.find('img').first().attr('src') || $a.find('img').first().attr('data-src') || null;
+    const $img = $a.find('img').first();
+    const img = httpUrl($img.attr('src'), url) || httpUrl($img.attr('data-src'), url);
     const haystack = `${title} ${summary} ${href}`;
     const regional = isRegional(haystack);
     items.push({
-      source: regional ? 'fussball.de · Region Westfalen' : 'next.fussball.de',
-      sourceKey: regional ? 'westfalen' : 'fussball',
       title: trim(title, 140),
       url: fullUrl,
-      pubDate: null,
+      pubDate: publicationDate($a.find('time[datetime]').first().attr('datetime')),
       summary: trim(summary, 260),
       bodyHtml: '',
       image: img,
@@ -204,6 +253,7 @@ async function fetchFussballDe() {
   ]);
 
   const merged = new Map(); // url → item, dedup
+  const failures = [];
   for (const r of [homeRes, allRes]) {
     if (r.status === 'fulfilled') {
       for (const it of r.value) {
@@ -211,39 +261,55 @@ async function fetchFussballDe() {
         const existing = merged.get(it.url);
         if (!existing || (!existing.regional && it.regional)) merged.set(it.url, it);
       }
+    } else {
+      failures.push(String(r.reason?.message || r.reason));
     }
   }
   const all = [...merged.values()];
   // Regionale Items zuerst, dann Rest
   all.sort((a, b) => Number(b.regional) - Number(a.regional));
-  // Mindestens 2 reguläre + alle regionalen, max 10 gesamt
-  return all.slice(0, 10);
+  if (!all.length && failures.length) throw new Error(failures.join('; '));
+  return { items: all, error: failures.length ? failures.join('; ') : undefined };
 }
 
 // ── News-Aggregator ────────────────────────────────────────────────
 async function refreshNews() {
-  const sources = [
-    { key: 'gladbeck', fn: fetchGladbeck },
-    { key: 'gelsenkirchen', fn: fetchGelsenkirchen },
-    { key: 'westfalen', fn: fetchFlvw },
-    { key: 'fussball', fn: fetchFussballDe },
-  ];
-
-  const results = await Promise.allSettled(sources.map((s) => s.fn()));
-  const items = [];
+  const results = await Promise.allSettled(NEWS_SOURCES.map((source) =>
+    source.key === 'fussball' ? fetchFussballDe() : fetchRss(source)));
+  const updatedAt = new Date().toISOString();
   const errors = [];
-
-  results.forEach((r, idx) => {
-    const src = sources[idx];
+  const collected = results.map((r, idx) => {
+    const src = NEWS_SOURCES[idx];
+    const source = { key: src.key, name: src.name, url: src.url };
     if (r.status === 'fulfilled') {
-      items.push(...r.value);
-      console.log(`[news] ${src.key}: ${r.value.length} items`);
-    } else {
-      errors.push({ source: src.key, error: String(r.reason?.message || r.reason) });
-      console.error(`[news] ${src.key} failed:`, r.reason?.message || r.reason);
+      const items = normalizeArticles(r.value.items, src);
+      lastSuccessfulNews.set(src.key, { items, updatedAt });
+      if (r.value.error) errors.push({ source: src.key, error: r.value.error });
+      console.log(`[news] ${src.key}: ${items.length} items${r.value.error ? ' (partial)' : ''}`);
+      return {
+        items,
+        source: { ...source, status: r.value.error ? 'partial' : items.length ? 'ok' : 'empty',
+          count: 0, updatedAt, ...(r.value.error ? { error: r.value.error } : {}) },
+      };
     }
+    const error = String(r.reason?.message || r.reason);
+    const previous = lastSuccessfulNews.get(src.key);
+    errors.push({ source: src.key, error });
+    console.error(`[news] ${src.key} failed:`, error);
+    return {
+      items: previous?.items || [],
+      source: { ...source, status: previous?.items.length ? 'stale' : 'error', count: 0,
+        updatedAt: previous?.updatedAt || null, error },
+    };
   });
 
+  // Frische Artikel gewinnen bei Duplikaten gegen zurückgehaltene ältere Daten.
+  const unique = new Map();
+  for (const group of [...collected].sort((a, b) => Number(a.source.status === 'stale') - Number(b.source.status === 'stale'))) {
+    for (const item of group.items) if (!unique.has(item.url)) unique.set(item.url, item);
+  }
+  const items = [...unique.values()];
+  for (const group of collected) group.source.count = items.filter(item => item.sourceKey === group.source.key).length;
   // Nach Datum sortieren (neueste zuerst), Items ohne Datum hinten
   items.sort((a, b) => {
     const da = a.pubDate ? new Date(a.pubDate).getTime() : 0;
@@ -251,7 +317,7 @@ async function refreshNews() {
     return db - da;
   });
 
-  cache.news = { items, updatedAt: new Date().toISOString(), errors };
+  cache.news = { items, updatedAt, errors, sources: collected.map(group => group.source) };
   return cache.news;
 }
 
@@ -262,9 +328,10 @@ async function refreshWeather() {
     `&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max` +
     `&timezone=Europe%2FBerlin&forecast_days=4`;
   try {
-    const res = await fetchWithTimeout(url);
-    if (!res.ok) throw new Error(`Open-Meteo status ${res.status}`);
-    const data = await res.json();
+    const data = await fetchWithTimeout(url, async (res) => {
+      if (!res.ok) throw new Error(`Open-Meteo status ${res.status}`);
+      return res.json();
+    });
     cache.weather = {
       current: {
         temperature: data.current?.temperature_2m,
