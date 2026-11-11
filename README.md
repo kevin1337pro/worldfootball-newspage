@@ -4,22 +4,33 @@ Live-News aus **Gladbeck**, **Gelsenkirchen** und der **Fußball-Welt** — auto
 
 ## Features
 
-- Aggregiert News aus drei Quellen:
+- Aggregiert News aus vier Quellen:
   - **next.fussball.de** (DFB Amateurfußball-Portal, HTML-Scraping)
   - **gladbeck.de** (RSS-Feed)
   - **gelsenkirchen.de** (Atom-Feed)
+  - **flvw.de** (RSS-Feed des Fußball- und Leichtathletik-Verbands Westfalen)
 - Wetter-Widget für Gladbeck via [Open-Meteo](https://open-meteo.com) — aktuell + 4-Tages-Vorhersage
-- Server-Cache, Auto-Refresh: News alle 30 Min, Wetter alle 15 Min
+- Server-Cache: News 30 Min, Wetter 15 Min; abgelaufene Daten werden bei der nächsten API-Anfrage aktualisiert
 - Iridescent-Tilt-Karten mit Click-to-Flip
 
 ## Lokal starten
 
+Node.js 24 wird lokal und auf Vercel verwendet. API-Schlüssel sind nicht erforderlich.
+
 ```bash
-npm install
+npm ci
 npm start
 ```
 
-Server läuft dann auf <http://localhost:3000>.
+Server läuft dann auf <http://localhost:3000>. Für den Entwicklungsmodus mit automatischem Neustart: `npm run dev`. Der Port lässt sich über `PORT` ändern.
+
+`npm test` prüft die API, Cache-Laufzeiten, parallele Anfragen und Fehlerfälle ohne externe Dienste.
+
+## Deploy auf Vercel
+
+Das GitHub-Repository in Vercel importieren und das Framework **Express** sowie Node.js **24.x** auswählen. `vercel.json` enthält die Installations- und Laufzeitkonfiguration; ein Build-Befehl und Umgebungsvariablen sind nicht erforderlich.
+
+`server.js` exportiert die Express-Anwendung. Dateien aus `public/` werden über das Vercel-CDN ausgeliefert. News und Wetter werden beim ersten API-Aufruf geladen und danach pro laufender Instanz zwischengespeichert. Gleichzeitige Anfragen teilen sich eine laufende Aktualisierung. Hintergrundtimer sind nicht nötig.
 
 ## Deploy auf Render
 

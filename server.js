@@ -42,6 +42,26 @@ const cache = {
   news: { items: [], updatedAt: null, errors: [] },
   weather: { current: null, updatedAt: null, error: null },
 };
+const pendingRefreshes = { news: null, weather: null };
+
+function getFreshCache(key, maxAge, refresh) {
+  if (pendingRefreshes[key]) return pendingRefreshes[key];
+
+  const updatedAt = Date.parse(cache[key].updatedAt || '');
+  if (Number.isFinite(updatedAt) && Date.now() - updatedAt < maxAge) {
+    return Promise.resolve(cache[key]);
+  }
+
+  // Bei kaltem oder abgelaufenem Cache teilen gleichzeitige Anfragen einen Abruf.
+  // Die Aktualisierung läuft innerhalb der Anfrage, auch auf Serverless-Instanzen.
+  pendingRefreshes[key] = Promise.resolve().then(refresh).finally(() => {
+    pendingRefreshes[key] = null;
+  });
+  return pendingRefreshes[key];
+}
+
+const getNews = () => getFreshCache('news', REFRESH_INTERVAL_MS, refreshNews);
+const getWeather = () => getFreshCache('weather', WEATHER_INTERVAL_MS, refreshWeather);
 
 // ── Helper: HTML strip ────────────────────────────────────────────
 function stripHtml(html = '') {
@@ -278,24 +298,39 @@ async function refreshWeather() {
 // ── Routes ─────────────────────────────────────────────────────────
 app.use(express.static(path.join(__dirname, 'public')));
 
-app.get('/api/news', (req, res) => {
-  res.set('Cache-Control', 'public, max-age=60');
-  res.json(cache.news);
+app.get('/api/news', async (req, res, next) => {
+  try {
+    const news = await getNews();
+    res.set('Cache-Control', 'public, max-age=60');
+    res.json(news);
+  } catch (error) {
+    next(error);
+  }
 });
 
-app.get('/api/weather', (req, res) => {
-  res.set('Cache-Control', 'public, max-age=120');
-  res.json(cache.weather);
+app.get('/api/weather', async (req, res, next) => {
+  try {
+    const weather = await getWeather();
+    res.set('Cache-Control', 'public, max-age=120');
+    res.json(weather);
+  } catch (error) {
+    next(error);
+  }
 });
 
-app.get('/api/health', (req, res) => {
-  res.json({
-    ok: true,
-    newsCount: cache.news.items.length,
-    newsUpdatedAt: cache.news.updatedAt,
-    weatherUpdatedAt: cache.weather.updatedAt,
-    weatherOk: !!cache.weather.current,
-  });
+app.get('/api/health', async (req, res, next) => {
+  try {
+    const [news, weather] = await Promise.all([getNews(), getWeather()]);
+    res.json({
+      ok: true,
+      newsCount: news.items.length,
+      newsUpdatedAt: news.updatedAt,
+      weatherUpdatedAt: weather.updatedAt,
+      weatherOk: !!weather.current,
+    });
+  } catch (error) {
+    next(error);
+  }
 });
 
 app.get('/', (req, res) => {
@@ -305,12 +340,15 @@ app.get('/', (req, res) => {
 // ── Boot ───────────────────────────────────────────────────────────
 async function boot() {
   console.log('[boot] initial fetch …');
-  await Promise.allSettled([refreshNews(), refreshWeather()]);
-  setInterval(() => refreshNews().catch((e) => console.error('[news] interval error', e)), REFRESH_INTERVAL_MS);
-  setInterval(() => refreshWeather().catch((e) => console.error('[weather] interval error', e)), WEATHER_INTERVAL_MS);
+  await Promise.allSettled([getNews(), getWeather()]);
   app.listen(PORT, () => {
     console.log(`\n  Worldfootball News Page → http://localhost:${PORT}\n`);
   });
 }
 
-boot();
+export default app;
+
+// Vercel importiert die App; npm start und npm run dev starten den lokalen Server.
+if (!process.env.VERCEL && process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  boot();
+}
